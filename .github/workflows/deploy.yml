@@ -64,16 +64,37 @@ jobs:
           mkdir -p "$APP_ROOT/shared/uploads/profiles"
           mkdir -p "$APP_ROOT/shared/uploads/receipts"
           
-          # 디렉토리 권한 설정 (쓰기 가능)
-          chmod -R 755 "$APP_ROOT/shared"
+          # 현재 사용자 확인
+          CURRENT_USER=$(whoami)
+          echo "Current user: $CURRENT_USER"
           
-          # 데이터베이스 파일이 있으면 권한 설정
+          # 데이터베이스 파일이 있으면 읽기 전용 속성 제거
           if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
-            chmod 664 "$APP_ROOT/shared/data/gyegaboo.db"
+            echo "Removing read-only attribute from database file..."
+            chattr -i "$APP_ROOT/shared/data/gyegaboo.db" 2>/dev/null || true
+            chmod 666 "$APP_ROOT/shared/data/gyegaboo.db" || true
+          fi
+          
+          # 데이터베이스 잠금 파일도 제거 (있는 경우)
+          rm -f "$APP_ROOT/shared/data/gyegaboo.db-shm" 2>/dev/null || true
+          rm -f "$APP_ROOT/shared/data/gyegaboo.db-wal" 2>/dev/null || true
+          
+          # 디렉토리 권한 설정 (쓰기 가능)
+          chmod -R 777 "$APP_ROOT/shared" || chmod -R 755 "$APP_ROOT/shared"
+          
+          # 데이터베이스 파일 권한 재설정
+          if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
+            chmod 666 "$APP_ROOT/shared/data/gyegaboo.db" || chmod 664 "$APP_ROOT/shared/data/gyegaboo.db"
           fi
           
           # 소유권 설정 (ec2-user가 소유하도록)
-          chown -R ec2-user:ec2-user "$APP_ROOT/shared" || true
+          sudo chown -R ec2-user:ec2-user "$APP_ROOT/shared" 2>/dev/null || chown -R ec2-user:ec2-user "$APP_ROOT/shared" 2>/dev/null || true
+          
+          # 권한 확인
+          echo "Database file permissions:"
+          ls -la "$APP_ROOT/shared/data/gyegaboo.db" 2>/dev/null || echo "Database file does not exist yet"
+          echo "Shared directory permissions:"
+          ls -ld "$APP_ROOT/shared" || true
 
       # 🔹 Green-Blue 배포 스크립트 실행
       - name: Green-Blue Deploy

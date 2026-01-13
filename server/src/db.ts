@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
-import { mkdirSync, existsSync, chmodSync } from 'fs';
+import { mkdirSync, existsSync, chmodSync, statSync } from 'fs';
+import { execSync } from 'child_process';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { ExpenseItem, Category } from '../../src/types/index.js';
@@ -19,15 +20,57 @@ if (!existsSync(dataDir)) {
 }
 
 const dbPath = join(dataDir, 'gyegaboo.db');
-const db = new Database(dbPath);
 
-// 데이터베이스 파일 권한 확인 및 설정 (파일이 존재하는 경우)
+// 데이터베이스 파일이 존재하는 경우 권한 확인 및 설정
 if (existsSync(dbPath)) {
   try {
-    chmodSync(dbPath, 0o664);
+    // 읽기 전용 속성 제거 시도 (Linux)
+    try {
+      execSync(`chattr -i "${dbPath}" 2>/dev/null || true`, { stdio: 'ignore' });
+    } catch (e) {
+      // chattr가 없거나 실패해도 계속 진행
+    }
+    // 파일 권한 설정 (쓰기 가능)
+    chmodSync(dbPath, 0o666);
   } catch (error) {
-    // 권한 설정 실패 시 무시
+    console.warn('Failed to set database file permissions:', error);
   }
+}
+
+// 데이터베이스 연결 시 읽기/쓰기 모드로 열기
+let db: Database.Database;
+try {
+  db = new Database(dbPath, {
+    verbose: (message) => {
+      // 개발 환경에서만 로그 출력
+      if (process.env.NODE_ENV === 'development') {
+        console.log('SQLite:', message);
+      }
+    }
+  });
+  
+  // 데이터베이스 파일 권한 재설정 (연결 후)
+  if (existsSync(dbPath)) {
+    try {
+      chmodSync(dbPath, 0o666);
+    } catch (error) {
+      // 권한 설정 실패 시 무시
+    }
+  }
+} catch (error: any) {
+  console.error('Failed to open database:', error);
+  // 읽기 전용 오류인 경우 더 자세한 정보 출력
+  if (error.code === 'SQLITE_READONLY_DBMOVED' || error.message?.includes('readonly')) {
+    console.error('Database file is read-only. Checking permissions...');
+    try {
+      const stats = statSync(dbPath);
+      console.error(`Database file permissions: ${stats.mode.toString(8)}`);
+      console.error(`Database file owner: ${stats.uid}`);
+    } catch (e) {
+      console.error('Could not check file stats');
+    }
+  }
+  throw error;
 }
 
 // 데이터베이스 초기화
