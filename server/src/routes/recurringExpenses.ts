@@ -83,7 +83,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
     }
 
     const item = {
-      id: data.id || Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: data.id || generateUniqueId(),
       name: data.name,
       amount: data.amount,
       category: data.category,

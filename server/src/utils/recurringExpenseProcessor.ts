@@ -132,7 +132,7 @@ export function processRecurringExpenseById(id: string, targetDate?: string): Ex
   }
 
   const item: ExpenseItem = {
-    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    id: generateUniqueId(),
     date: today,
     amount: recurring.amount,
     category: recurring.category,
