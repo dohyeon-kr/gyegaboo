@@ -181,22 +181,24 @@ export const expenseQueries = {
     return db.prepare(`
       SELECT 
         e.*,
-        COALESCE(u.nickname, u.username) as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername,
+        u.profile_image_url as createdByProfileImageUrl
       FROM expenses e
       LEFT JOIN users u ON e.created_by = u.id
       ORDER BY e.date DESC
-    `).all() as Array<ExpenseItem & { createdByUsername?: string }>;
+    `).all() as Array<ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }>;
   },
 
   getById: (id: string) => {
     return db.prepare(`
       SELECT 
         e.*,
-        COALESCE(u.nickname, u.username) as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername,
+        u.profile_image_url as createdByProfileImageUrl
       FROM expenses e
       LEFT JOIN users u ON e.created_by = u.id
       WHERE e.id = ?
-    `).get(id) as (ExpenseItem & { createdByUsername?: string }) | undefined;
+    `).get(id) as (ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }) | undefined;
   },
 
   create: (item: ExpenseItem, createdBy?: string) => {
@@ -309,7 +311,8 @@ export const recurringExpenseQueries = {
     return db.prepare(`
       SELECT 
         r.*,
-        COALESCE(u.nickname, u.username) as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername,
+        u.profile_image_url as createdByProfileImageUrl
       FROM recurring_expenses r
       LEFT JOIN users u ON r.created_by = u.id
       ORDER BY r.start_date DESC
@@ -335,7 +338,8 @@ export const recurringExpenseQueries = {
     return db.prepare(`
       SELECT 
         r.*,
-        COALESCE(u.nickname, u.username) as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername,
+        u.profile_image_url as createdByProfileImageUrl
       FROM recurring_expenses r
       LEFT JOIN users u ON r.created_by = u.id
       WHERE r.id = ?
@@ -346,7 +350,8 @@ export const recurringExpenseQueries = {
     return db.prepare(`
       SELECT 
         r.*,
-        COALESCE(u.nickname, u.username) as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername,
+        u.profile_image_url as createdByProfileImageUrl
       FROM recurring_expenses r
       LEFT JOIN users u ON r.created_by = u.id
       WHERE r.is_active = 1

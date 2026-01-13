@@ -25,6 +25,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       isActive: item.is_active === 1,
       createdBy: item.created_by,
       createdByUsername: item.createdByUsername,
+      createdByProfileImageUrl: item.createdByProfileImageUrl,
     }));
   });
 
@@ -48,6 +49,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       isActive: item.is_active === 1,
       createdBy: item.created_by,
       createdByUsername: item.createdByUsername,
+      createdByProfileImageUrl: item.createdByProfileImageUrl,
     }));
   });
 
@@ -77,6 +79,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       isActive: item.is_active === 1,
       createdBy: item.created_by,
       createdByUsername: item.createdByUsername,
+      createdByProfileImageUrl: item.createdByProfileImageUrl,
     };
   });
 

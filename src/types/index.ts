@@ -9,6 +9,7 @@ export interface ExpenseItem {
   imageUrl?: string; // 이미지가 있는 경우
   createdBy?: string; // 작성자 ID
   createdByUsername?: string; // 작성자 사용자명
+  createdByProfileImageUrl?: string; // 작성자 프로필 이미지 URL
 }
 
 // 항목 분류 카테고리
@@ -71,4 +72,5 @@ export interface RecurringExpense {
   isActive: boolean; // 활성화 여부
   createdBy?: string; // 작성자 ID
   createdByUsername?: string; // 작성자 사용자명
+  createdByProfileImageUrl?: string; // 작성자 프로필 이미지 URL
 }

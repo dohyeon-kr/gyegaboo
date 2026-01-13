@@ -117,9 +117,18 @@ export function ExpenseList() {
                           <span className="px-2 py-1 text-xs font-medium rounded-md bg-secondary">
                             {item.category}
                           </span>
-                          <span className="px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary">
-                            작성자: {item.createdByUsername || '시스템'}
-                          </span>
+                          <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary">
+                            {item.createdByProfileImageUrl ? (
+                              <img
+                                src={item.createdByProfileImageUrl}
+                                alt={item.createdByUsername || '작성자'}
+                                className="w-4 h-4 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-4 h-4 rounded-full bg-muted" />
+                            )}
+                            <span>{item.createdByUsername || '시스템'}</span>
+                          </div>
                         </div>
                         <p className="text-sm font-medium">{item.description}</p>
                         {item.imageUrl && (
