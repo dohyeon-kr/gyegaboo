@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForToast } from './helpers/toast';
 
 test.describe('인증 플로우', () => {
   test.beforeEach(async ({ page }) => {
@@ -39,7 +40,7 @@ test.describe('인증 플로우', () => {
     await page.getByRole('button', { name: /로그인/i }).click();
     
     // 에러 메시지 표시 확인 (Toast)
-    await expect(page.locator('[role="status"]').filter({ hasText: /로그인 실패/i })).toBeVisible({ timeout: 5000 });
+    await waitForToast(page, /로그인 실패/i);
   });
 
   test('초기 관리자 등록 플로우', async ({ page }) => {

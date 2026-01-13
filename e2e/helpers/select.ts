@@ -35,16 +35,17 @@ export async function selectOptionById(page: Page, selectId: string, option: str
   await trigger.waitFor({ state: 'visible', timeout: 5000 });
   await trigger.click();
   
-  // SelectContent가 나타날 때까지 대기
-  await page.waitForSelector('[role="listbox"], [role="option"]', { timeout: 5000 });
+  // SelectContent가 나타날 때까지 대기 (data-state="open" 확인)
+  await page.waitForSelector(`button#${selectId}[data-state="open"]`, { timeout: 5000 }).catch(async () => {
+    // data-state가 없을 수도 있으므로 옵션이 나타날 때까지 대기
+    await page.waitForSelector('[role="option"]', { timeout: 5000 });
+  });
   
   // 옵션 선택 (정확한 텍스트 매칭 또는 부분 매칭)
-  const optionLocator = page.getByRole('option').filter({ hasText: option });
+  const optionLocator = page.getByRole('option').filter({ hasText: new RegExp(option, 'i') });
   await optionLocator.waitFor({ state: 'visible', timeout: 5000 });
   await optionLocator.click();
   
-  // Select가 닫힐 때까지 대기 (옵션이 사라질 때까지)
-  await page.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: 2000 }).catch(() => {
-    // 이미 닫혔을 수 있음
-  });
+  // Select가 닫힐 때까지 대기
+  await page.waitForTimeout(300);
 }

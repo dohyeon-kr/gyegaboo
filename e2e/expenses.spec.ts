@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser } from './helpers/auth';
 import { selectOptionById } from './helpers/select';
+import { waitForToast } from './helpers/toast';
 
 test.describe('지출/수입 관리', () => {
   test.beforeEach(async ({ page }) => {

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser } from './helpers/auth';
 import { selectOptionById } from './helpers/select';
+import { waitForToast } from './helpers/toast';
 
 test.describe('고정비 관리', () => {
   test.beforeEach(async ({ page }) => {
@@ -36,12 +37,8 @@ test.describe('고정비 관리', () => {
     ).first();
     await submitButton.click();
     
-    // 추가 완료 확인 (Toast - 첫 번째 요소만 확인)
-    await expect(
-      page.locator('[role="status"]').filter({ hasText: /추가 완료|저장 완료/i }).or(
-        page.getByText(/추가 완료|저장 완료/i)
-      ).first()
-    ).toBeVisible({ timeout: 5000 });
+    // 추가 완료 확인 (Toast)
+    await waitForToast(page, /추가 완료|저장 완료/i);
     
     // 목록에 추가된 항목 확인
     await expect(page.getByText(/관리비/i).first()).toBeVisible({ timeout: 5000 });
