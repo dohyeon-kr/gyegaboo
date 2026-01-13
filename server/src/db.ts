@@ -4,6 +4,7 @@ import { mkdirSync, existsSync } from 'fs';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { ExpenseItem, Category } from '../../src/types/index.js';
+import { PrismaLibSql } from '@prisma/adapter-libsql';
 
 // shared/data 디렉토리 생성
 const sharedDir = join(process.cwd(), 'shared');
@@ -21,9 +22,15 @@ if (!process.env.DATABASE_URL) {
   process.env.DATABASE_URL = databaseUrl;
 }
 
+const adapter = new PrismaLibSql({
+  url: process.env.DATABASE_URL ?? '',
+});
+
 // Prisma 클라이언트 생성
 // 환경 변수 DATABASE_URL을 사용하므로 옵션 없이 생성 가능
-export const prisma = new PrismaClient();
+export const prisma = new PrismaClient({
+  adapter
+});
 
 // 데이터베이스 파일 존재 여부 확인
 const dbExists = existsSync(dbPath);
