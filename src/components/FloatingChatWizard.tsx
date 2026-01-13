@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useLocation } from '@tanstack/react-router'
-import { AIService } from '../services/aiService'
 import { useExpenseStore } from '../stores/expenseStore'
 import { Button } from './ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card'
@@ -19,9 +18,8 @@ export function FloatingChatWizard() {
   const [isMinimized, setIsMinimized] = useState(false)
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
   const location = useLocation()
-  const { fetchItems } = useExpenseStore()
+  const { chatWithAI, loading, fetchItems } = useExpenseStore()
   const { toast } = useToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -60,7 +58,6 @@ export function FloatingChatWizard() {
     const userMessage = input.trim()
     setInput('')
     setMessages((prev) => [...prev, { role: 'user', content: userMessage }])
-    setLoading(true)
 
     try {
       // 현재 페이지 컨텍스트 가져오기
@@ -81,7 +78,7 @@ export function FloatingChatWizard() {
         ...chatMessages,
       ]
 
-      const response = await AIService.chat(allMessages)
+      const response = await chatWithAI(allMessages)
       
       setMessages((prev) => [
         ...prev,
@@ -111,8 +108,6 @@ export function FloatingChatWizard() {
         ...prev,
         { role: 'assistant', content: '죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.' },
       ])
-    } finally {
-      setLoading(false)
     }
   }
 

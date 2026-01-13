@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import type { ExpenseItem, Category } from '../types';
 import { ExpenseService } from '../services/expenseService';
+import { ImageService } from '../services/imageService';
+import { AIService } from '../services/aiService';
 
 interface ExpenseStore {
   items: ExpenseItem[];
@@ -15,6 +17,14 @@ interface ExpenseStore {
   updateItem: (id: string, item: Partial<ExpenseItem>) => Promise<void>;
   addCategory: (category: Category) => void;
   getItemsByDateRange: (startDate: string, endDate: string) => ExpenseItem[];
+  // 이미지 업로드 관련
+  uploadImageAndExtract: (file: File) => Promise<{ success: boolean; items?: ExpenseItem[]; message?: string }>;
+  // AI 관련
+  chatWithAI: (messages: Array<{ role: 'user' | 'assistant'; content: string }>) => Promise<{
+    message?: string;
+    data?: ExpenseItem[];
+    recurringExpense?: any;
+  }>;
 }
 
 // 기본 카테고리
@@ -120,5 +130,47 @@ export const useExpenseStore = create<ExpenseStore>((set, get) => ({
     return items.filter(
       (item) => item.date >= startDate && item.date <= endDate
     );
+  },
+
+  uploadImageAndExtract: async (file: File) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await ImageService.uploadAndExtract(file);
+      if (response.success && response.items && response.items.length > 0) {
+        // 추출된 항목을 자동으로 추가
+        await get().addItems(response.items);
+      }
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : '이미지 업로드에 실패했습니다.';
+      set({
+        error: errorMessage,
+        loading: false,
+      });
+      throw error;
+    }
+  },
+
+  chatWithAI: async (messages) => {
+    set({ loading: true, error: null });
+    try {
+      const response = await AIService.chat(messages);
+      
+      // 항목이 생성된 경우 자동으로 추가
+      if (response.data && response.data.length > 0) {
+        await get().addItems(response.data);
+      }
+      
+      set({ loading: false });
+      return response;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'AI 응답 생성에 실패했습니다.';
+      set({
+        error: errorMessage,
+        loading: false,
+      });
+      throw error;
+    }
   },
 }));

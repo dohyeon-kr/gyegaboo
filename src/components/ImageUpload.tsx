@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { ImageService } from '../services/imageService';
 import { useExpenseStore } from '../stores/expenseStore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -7,11 +6,10 @@ import { Upload, X, Image as ImageIcon } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
 export function ImageUpload() {
-  const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { addItems } = useExpenseStore();
+  const { uploadImageAndExtract, loading } = useExpenseStore();
   const { toast } = useToast();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,32 +35,20 @@ export function ImageUpload() {
       });
       return;
     }
-
-    setLoading(true);
     
     try {
-      const response = await ImageService.uploadAndExtract(selectedFile);
+      const response = await uploadImageAndExtract(selectedFile);
       
       if (response.success && response.items && response.items.length > 0) {
-        try {
-        await addItems(response.items);
         toast({
           title: "추가 완료",
           description: `${response.items.length}개의 항목이 추가되었습니다.`,
         });
         // 초기화
-          setSelectedFile(null);
-          setPreview(null);
+        setSelectedFile(null);
+        setPreview(null);
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
-        }
-        } catch (addError) {
-          console.error('Error adding items:', addError);
-          toast({
-            title: "추가 실패",
-            description: addError instanceof Error ? addError.message : "항목 추가 중 오류가 발생했습니다.",
-            variant: "destructive",
-          });
         }
       } else {
         toast({
@@ -78,8 +64,6 @@ export function ImageUpload() {
         description: error instanceof Error ? error.message : "업로드 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
