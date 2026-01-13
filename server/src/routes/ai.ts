@@ -1,9 +1,9 @@
 import type { FastifyInstance } from 'fastify';
-import { expenseQueries, recurringExpenseQueries } from '../db.js';
-import { generateAIResponse, parseExpenseFromText } from '../utils/aiParser.js';
+import { AIManager } from '../managers/aiManager.js';
+import { ExpenseManager } from '../managers/expenseManager.js';
 
 export async function aiRoutes(fastify: FastifyInstance) {
-  // AI를 통한 가계부 읽기
+  // AI를 통한 가계부 읽기 (레거시 지원)
   fastify.post('/read', {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
@@ -13,10 +13,10 @@ export async function aiRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'query is required' });
     }
 
-    const expenses = await expenseQueries.getAll();
-    const response = await generateAIResponse(
+    const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
+    const response = await AIManager.chat(
       [{ role: 'user', content: query }],
-      expenses
+      user.id
     );
 
     return {
@@ -26,7 +26,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     };
   });
 
-  // AI를 통한 가계부 쓰기
+  // AI를 통한 가계부 쓰기 (레거시 지원)
   fastify.post('/write', {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
@@ -37,7 +37,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'query is required' });
     }
 
-    const items = await parseExpenseFromText(query);
+    const items = await ExpenseManager.createFromText(query, user.id);
     
     if (items.length === 0) {
       return reply.code(400).send({
@@ -46,15 +46,13 @@ export async function aiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const created = await expenseQueries.createMany(items, user.id);
-
     return {
       success: true,
-      items: created,
+      items,
     };
   });
 
-  // AI 챗봇
+  // AI 챗봇 (Function Calling 사용)
   fastify.post('/chat', {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
@@ -66,37 +64,13 @@ export async function aiRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'messages array is required' });
     }
 
-    const expenses = await expenseQueries.getAll();
-    const response = await generateAIResponse(messages, expenses);
-
     const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
-
-    if (response.recurringExpense) {
-      // 고정비 생성
-      const created = await recurringExpenseQueries.create(response.recurringExpense, user.id);
-      return {
-        success: true,
-        recurringExpense: {
-          ...response.recurringExpense,
-          createdBy: created.created_by,
-          createdByUsername: created.createdByUsername,
-        },
-        message: response.message,
-      };
-    }
-
-    if (response.items && response.items.length > 0) {
-      const created = await expenseQueries.createMany(response.items, user.id);
-      return {
-        success: true,
-        items: created,
-        message: response.message,
-      };
-    }
+    const response = await AIManager.chat(messages, user.id);
 
     return {
       success: true,
-      items: [],
+      items: response.items || [],
+      recurringExpense: response.recurringExpense,
       message: response.message,
     };
   });
