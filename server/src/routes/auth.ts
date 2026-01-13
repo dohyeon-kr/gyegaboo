@@ -129,32 +129,39 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.post('/invite', {
     preHandler: [fastify.authenticate],
   }, async (request: FastifyRequest, reply: FastifyReply) => {
-    const currentUser = request.user as { id: string; username: string; isInitialAdmin: boolean };
-    
-    // 초기 admin이 아닌 경우에만 초대 가능 (초기 admin은 관리자 등록만 가능)
-    if (currentUser.isInitialAdmin) {
-      return reply.code(403).send({ error: '초기 관리자는 초대 링크를 생성할 수 없습니다. 먼저 관리자를 등록해주세요.' });
-    }
+    try {
+      const currentUser = request.user as { id: string; username: string; isInitialAdmin: boolean };
+      
+      // 초기 admin이 아닌 경우에만 초대 가능 (초기 admin은 관리자 등록만 가능)
+      if (currentUser.isInitialAdmin) {
+        return reply.code(403).send({ error: '초기 관리자는 초대 링크를 생성할 수 없습니다. 먼저 관리자를 등록해주세요.' });
+      }
 
-    // 초대 토큰 생성 (32바이트 랜덤 문자열)
-    const token = randomBytes(32).toString('hex');
-    
-    // 만료 시간: 현재 시간 + 10분
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-    
-    // 데이터베이스에 저장
-    invitationTokenQueries.create(token, currentUser.id, expiresAt);
-    
-    // 초대 링크 생성
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-    const inviteLink = `${baseUrl}/register?token=${token}`;
-    
-    return {
-      token,
-      inviteLink,
-      expiresAt,
-      message: '초대 링크가 생성되었습니다. 10분 내에 사용 가능합니다.',
-    };
+      // 초대 토큰 생성 (32바이트 랜덤 문자열)
+      const token = randomBytes(32).toString('hex');
+      
+      // 만료 시간: 현재 시간 + 10분
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+      
+      // 데이터베이스에 저장
+      invitationTokenQueries.create(token, currentUser.id, expiresAt);
+      
+      // 초대 링크 생성
+      const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const inviteLink = `${baseUrl}/register?token=${token}`;
+      
+      return {
+        token,
+        inviteLink,
+        expiresAt,
+        message: '초대 링크가 생성되었습니다. 10분 내에 사용 가능합니다.',
+      };
+    } catch (error: any) {
+      fastify.log.error('초대 토큰 생성 오류:', error);
+      return reply.code(500).send({ 
+        error: error.message || '초대 링크 생성에 실패했습니다.',
+      });
+    }
   });
 
   // 초대 토큰 검증
