@@ -117,10 +117,10 @@ function RegisterAdminForm() {
     setIsLoading(true);
 
     try {
-      const result = await registerAdmin(username, password);
+      await registerAdmin(username, password);
       toast({
         title: '등록 완료',
-        description: result.message || '새로운 관리자가 등록되었습니다.',
+        description: '새로운 관리자가 등록되었습니다.',
       });
     } catch (err: any) {
       toast({

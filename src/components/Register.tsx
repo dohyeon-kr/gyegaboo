@@ -7,8 +7,12 @@ import { Label } from './ui/label';
 import { Card } from './ui/card';
 import { useToast } from './ui/use-toast';
 
-export function Register() {
-  const [token, setToken] = useState<string | null>(null);
+interface RegisterProps {
+  token?: string;
+}
+
+export function Register({ token: tokenProp }: RegisterProps) {
+  const [token, setToken] = useState<string | null>(tokenProp || null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -19,11 +23,15 @@ export function Register() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // URL에서 토큰 추출
-    const urlParams = new URLSearchParams(window.location.search);
-    const tokenFromUrl = urlParams.get('token');
-    setToken(tokenFromUrl);
-  }, []);
+    // prop으로 받은 토큰이 있으면 사용, 없으면 URL에서 추출
+    if (tokenProp) {
+      setToken(tokenProp);
+    } else {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tokenFromUrl = urlParams.get('token');
+      setToken(tokenFromUrl);
+    }
+  }, [tokenProp]);
 
   useEffect(() => {
     const validateToken = async () => {
