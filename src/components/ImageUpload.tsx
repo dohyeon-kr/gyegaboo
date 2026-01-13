@@ -1,12 +1,17 @@
 import { useState, useRef } from 'react';
 import { ImageService } from '../services/imageService';
 import { useExpenseStore } from '../stores/expenseStore';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Upload, X, Image as ImageIcon } from 'lucide-react';
+import { useToast } from './ui/use-toast';
 
 export function ImageUpload() {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addItems } = useExpenseStore();
+  const { toast } = useToast();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -29,18 +34,29 @@ export function ImageUpload() {
       const response = await ImageService.uploadAndExtract(file);
       
       if (response.success && response.items && response.items.length > 0) {
-        addItems(response.items);
-        alert(`${response.items.length}개의 항목이 추가되었습니다.`);
+        await addItems(response.items);
+        toast({
+          title: "추가 완료",
+          description: `${response.items.length}개의 항목이 추가되었습니다.`,
+        });
         // 초기화
         if (fileInputRef.current) {
           fileInputRef.current.value = '';
         }
         setPreview(null);
       } else {
-        alert(response.message || '이미지에서 데이터를 추출하지 못했습니다.');
+        toast({
+          title: "추출 실패",
+          description: response.message || '이미지에서 데이터를 추출하지 못했습니다.',
+          variant: "destructive",
+        });
       }
     } catch (error) {
-      alert('업로드 중 오류가 발생했습니다.');
+      toast({
+        title: "오류",
+        description: "업로드 중 오류가 발생했습니다.",
+        variant: "destructive",
+      });
       console.error(error);
     } finally {
       setLoading(false);
@@ -48,42 +64,63 @@ export function ImageUpload() {
   };
 
   return (
-    <div className="image-upload">
-      <h2>이미지로 가계부 추가</h2>
-      <div className="upload-area">
-        {preview ? (
-          <div className="preview-container">
-            <img src={preview} alt="미리보기" className="preview-image" />
-            <button onClick={() => setPreview(null)}>다시 선택</button>
-          </div>
-        ) : (
-          <div className="upload-placeholder">
-            <p>영수증이나 가계부 이미지를 업로드하세요</p>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              style={{ display: 'none' }}
-            />
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="select-button"
-            >
-              이미지 선택
-            </button>
-          </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>이미지로 가계부 추가</CardTitle>
+        <CardDescription>영수증이나 가계부 이미지를 업로드하세요</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="border-2 border-dashed rounded-lg p-8 text-center">
+          {preview ? (
+            <div className="space-y-4">
+              <img 
+                src={preview} 
+                alt="미리보기" 
+                className="max-w-full max-h-96 mx-auto rounded-lg border"
+              />
+              <Button
+                variant="outline"
+                onClick={() => setPreview(null)}
+                className="w-full"
+              >
+                <X className="h-4 w-4 mr-2" />
+                다시 선택
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground">
+                영수증이나 가계부 이미지를 업로드하세요
+              </p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <Button
+                onClick={() => fileInputRef.current?.click()}
+                variant="outline"
+                className="w-full"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                이미지 선택
+              </Button>
+            </div>
+          )}
+        </div>
+        {preview && (
+          <Button
+            onClick={handleUpload}
+            disabled={loading}
+            className="w-full"
+          >
+            {loading ? '처리 중...' : '업로드 및 추출'}
+          </Button>
         )}
-      </div>
-      {preview && (
-        <button
-          onClick={handleUpload}
-          disabled={loading}
-          className="upload-button"
-        >
-          {loading ? '처리 중...' : '업로드 및 추출'}
-        </button>
-      )}
-    </div>
+      </CardContent>
+    </Card>
   );
 }

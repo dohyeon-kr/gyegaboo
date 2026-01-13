@@ -2,11 +2,17 @@ import { useMemo, useState } from 'react';
 import { useExpenseStore } from '../stores/expenseStore';
 import type { ExpenseItem } from '../types';
 import { format, parseISO } from 'date-fns';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Button } from './ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { useToast } from './ui/use-toast';
 
 export function ExpenseList() {
   const { items, removeItem } = useExpenseStore();
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+  const { toast } = useToast();
 
   const filteredAndSortedItems = useMemo(() => {
     let filtered: ExpenseItem[] = items;
@@ -24,59 +30,115 @@ export function ExpenseList() {
     });
   }, [items, filter, sortBy]);
 
-  return (
-    <div className="expense-list">
-      <div className="list-header">
-        <h2>가계부 목록</h2>
-        <div className="filters">
-          <select value={filter} onChange={(e) => setFilter(e.target.value as any)}>
-            <option value="all">전체</option>
-            <option value="income">수입</option>
-            <option value="expense">지출</option>
-          </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value as any)}>
-            <option value="date">날짜순</option>
-            <option value="amount">금액순</option>
-          </select>
-        </div>
-      </div>
+  const handleDelete = async (id: string) => {
+    try {
+      await removeItem(id);
+      toast({
+        title: "삭제 완료",
+        description: "항목이 삭제되었습니다.",
+      });
+    } catch (error) {
+      toast({
+        title: "오류",
+        description: "삭제에 실패했습니다.",
+        variant: "destructive",
+      });
+    }
+  };
 
-      <div className="items-container">
-        {filteredAndSortedItems.length === 0 ? (
-          <div className="empty-state">
-            <p>항목이 없습니다.</p>
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle>가계부 목록</CardTitle>
+          <CardDescription>수입과 지출 내역을 확인하고 관리하세요</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 mb-6">
+            <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="필터" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="income">수입</SelectItem>
+                <SelectItem value="expense">지출</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+              <SelectTrigger className="w-[140px]">
+                <SelectValue placeholder="정렬" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">날짜순</SelectItem>
+                <SelectItem value="amount">금액순</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        ) : (
-          filteredAndSortedItems.map((item) => (
-            <div key={item.id} className={`expense-item ${item.type}`}>
-              <div className="item-main">
-                <div className="item-info">
-                  <div className="item-date">
-                    {format(parseISO(item.date), 'yyyy-MM-dd')}
-                  </div>
-                  <div className="item-category">{item.category}</div>
-                  <div className="item-description">{item.description}</div>
-                </div>
-                <div className={`item-amount ${item.type}`}>
-                  {item.type === 'income' ? '+' : '-'}
-                  {item.amount.toLocaleString()}원
-                </div>
+
+          <div className="space-y-3">
+            {filteredAndSortedItems.length === 0 ? (
+              <div className="text-center py-12 text-muted-foreground">
+                <p>항목이 없습니다.</p>
               </div>
-              {item.imageUrl && (
-                <div className="item-image">
-                  <img src={item.imageUrl} alt="첨부 이미지" />
-                </div>
-              )}
-              <button
-                className="delete-button"
-                onClick={() => removeItem(item.id)}
-              >
-                삭제
-              </button>
-            </div>
-          ))
-        )}
-      </div>
+            ) : (
+              filteredAndSortedItems.map((item) => (
+                <Card key={item.id} className="border-l-4" style={{
+                  borderLeftColor: item.type === 'income' ? 'hsl(142, 71%, 45%)' : 'hsl(0, 84%, 60%)'
+                }}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs text-muted-foreground">
+                            {format(parseISO(item.date), 'yyyy-MM-dd')}
+                          </span>
+                          <span className="px-2 py-1 text-xs font-medium rounded-md bg-secondary">
+                            {item.category}
+                          </span>
+                        </div>
+                        <p className="text-sm font-medium">{item.description}</p>
+                        {item.imageUrl && (
+                          <div className="mt-2">
+                            <img 
+                              src={item.imageUrl} 
+                              alt="첨부 이미지" 
+                              className="max-w-[200px] rounded-md border"
+                            />
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`text-right ${item.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                          <div className="flex items-center gap-1">
+                            {item.type === 'income' ? (
+                              <TrendingUp className="h-4 w-4" />
+                            ) : (
+                              <TrendingDown className="h-4 w-4" />
+                            )}
+                            <span className="font-bold">
+                              {item.type === 'income' ? '+' : '-'}
+                              {item.amount.toLocaleString()}원
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(item.id)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
