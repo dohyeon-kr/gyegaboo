@@ -265,18 +265,21 @@ export async function authRoutes(fastify: FastifyInstance) {
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const currentUser = request.user as { id: string; username: string; isInitialAdmin: boolean };
+      
+      // multipart/form-data에서 파일 받기
       const data = await request.file();
 
       if (!data) {
         return reply.code(400).send({ error: '이미지 파일을 업로드해주세요.' });
       }
 
+      // 파일 버퍼와 MIME 타입 가져오기
       const buffer = await data.toBuffer();
       const mimeType = data.mimetype || 'image/jpeg';
 
-      // 이미지 저장
+      // 이미지 저장 (파라미터 순서: buffer, userId, mimeType)
       const { saveProfileImage } = await import('../utils/fileStorage.js');
-      const imagePath = await saveProfileImage(currentUser.id, buffer, mimeType);
+      const imagePath = await saveProfileImage(buffer, currentUser.id, mimeType);
 
       // 프로필 이미지 URL 업데이트
       const updated = await userQueries.update(currentUser.id, { profile_image_url: imagePath });

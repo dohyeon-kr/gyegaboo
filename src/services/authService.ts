@@ -154,9 +154,11 @@ class AuthService {
     formData.append('image', file);
 
     try {
+      // FormData를 사용할 때는 Content-Type을 명시하지 않아야 함
+      // 브라우저가 자동으로 boundary를 포함한 올바른 Content-Type을 설정함
       const { data } = await apiClient.post<User>('/auth/profile/image', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          'Content-Type': undefined, // undefined로 설정하여 axios가 자동으로 설정하도록 함
         },
       });
       return data;
