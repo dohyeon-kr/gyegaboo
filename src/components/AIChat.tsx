@@ -33,8 +33,7 @@ export function AIChat() {
       const response = await AIService.chat(newMessages);
       
       if (response.success && response.recurringExpense) {
-        // 고정비가 생성된 경우
-        await RecurringExpenseService.create(response.recurringExpense);
+        // 고정비가 생성된 경우 (백엔드에서 이미 생성됨)
         setMessages([
           ...newMessages,
           {
