@@ -42,6 +42,7 @@ export interface MonthlyData {
 export interface AIResponse {
   success: boolean;
   data?: ExpenseItem[];
+  recurringExpense?: RecurringExpense;
   message?: string;
 }
 

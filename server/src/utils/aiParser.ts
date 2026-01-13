@@ -1,7 +1,8 @@
-import type { ExpenseItem } from '../../../src/types/index.js';
+import type { ExpenseItem, RecurringExpense } from '../../../src/types/index.js';
 import { expenseQueries } from '../db.js';
 import { openai } from './openaiClient.js';
 import { generateUniqueId } from './idGenerator.js';
+import { parseRecurringExpenseFromText } from './recurringExpenseParser.js';
 
 /**
  * OpenAI API를 사용하여 자연어를 파싱하여 가계부 항목을 추출합니다
@@ -175,7 +176,7 @@ function parseExpenseFromTextFallback(text: string): ExpenseItem[] {
 export async function generateAIResponse(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   expenses: ExpenseItem[]
-): Promise<{ items?: ExpenseItem[]; message: string }> {
+): Promise<{ items?: ExpenseItem[]; recurringExpense?: RecurringExpense; message: string }> {
   if (!process.env.OPENAI_API_KEY) {
     return generateAIResponseFallback(messages, expenses);
   }
@@ -251,7 +252,7 @@ export async function generateAIResponse(
 function generateAIResponseFallback(
   messages: Array<{ role: 'user' | 'assistant'; content: string }>,
   expenses: ExpenseItem[]
-): { items?: ExpenseItem[]; message: string } {
+): { items?: ExpenseItem[]; recurringExpense?: RecurringExpense; message: string } {
   const lastMessage = messages[messages.length - 1];
   const userText = lastMessage.content.toLowerCase();
 

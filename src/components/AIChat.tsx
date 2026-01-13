@@ -31,7 +31,21 @@ export function AIChat() {
     try {
       const response = await AIService.chat(newMessages);
       
-      if (response.success && response.data && response.data.length > 0) {
+      if (response.success && response.recurringExpense) {
+        // 고정비가 생성된 경우
+        await RecurringExpenseService.create(response.recurringExpense);
+        setMessages([
+          ...newMessages,
+          {
+            role: 'assistant',
+            content: response.message || `고정비 "${response.recurringExpense.name}"가 추가되었습니다.`,
+          },
+        ]);
+        toast({
+          title: "고정비 추가 완료",
+          description: `고정비 "${response.recurringExpense.name}"가 추가되었습니다.`,
+        });
+      } else if (response.success && response.data && response.data.length > 0) {
         // 가계부 항목이 생성된 경우
         await addItems(response.data);
         setMessages([
@@ -88,6 +102,7 @@ export function AIChat() {
               <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <p>AI와 대화하여 가계부를 관리하세요.</p>
               <p className="text-sm mt-2">예: "오늘 커피 5000원 지출했어"</p>
+              <p className="text-sm mt-1">또는: "매월 관리비 10만원 고정비 추가"</p>
             </div>
           )}
           {messages.map((msg, idx) => (
