@@ -9,6 +9,16 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { Play, Plus, Edit, Trash2, X } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
@@ -17,6 +27,8 @@ export function RecurringExpenses() {
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState<RecurringExpense | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<RecurringExpense | null>(null);
   const { categories, fetchItems } = useExpenseStore();
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<RecurringExpense>>({

@@ -5,6 +5,16 @@ import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
 import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 
@@ -12,6 +22,8 @@ export function ExpenseList() {
   const { items, removeItem } = useExpenseStore();
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<ExpenseItem | null>(null);
   const { toast } = useToast();
 
   const filteredAndSortedItems = useMemo(() => {
@@ -30,13 +42,22 @@ export function ExpenseList() {
     });
   }, [items, filter, sortBy]);
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (item: ExpenseItem) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+
     try {
-      await removeItem(id);
+      await removeItem(itemToDelete.id);
       toast({
         title: "삭제 완료",
         description: "항목이 삭제되었습니다.",
       });
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     } catch (error) {
       toast({
         title: "오류",
