@@ -34,6 +34,9 @@ export default defineConfig({
   },
   /* 테스트 타임아웃 */
   timeout: 60000,
+  
+  /* Setup 파일 실행 */
+  globalSetup: require.resolve('./e2e/setup.ts'),
 
   /* Configure projects for major browsers */
   projects: [
