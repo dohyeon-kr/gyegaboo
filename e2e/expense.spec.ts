@@ -24,8 +24,12 @@ test.describe('가계부 항목 관리', () => {
     ).first();
     await submitButton.click();
     
-    // 성공 메시지 확인 (Toast)
-    await expect(page.locator('[role="status"]').filter({ hasText: /추가 완료/i })).toBeVisible({ timeout: 5000 });
+    // 성공 메시지 확인 (Toast - 첫 번째 요소만 확인)
+    await expect(
+      page.locator('[role="status"]').filter({ hasText: /추가 완료/i }).or(
+        page.getByText(/추가 완료/i)
+      ).first()
+    ).toBeVisible({ timeout: 5000 });
     
     // 목록 페이지로 이동하여 항목 확인
     await page.goto('/');

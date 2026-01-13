@@ -32,14 +32,19 @@ export async function selectOption(page: Page, label: string | RegExp, option: s
 export async function selectOptionById(page: Page, selectId: string, option: string) {
   // Select 트리거 클릭
   const trigger = page.locator(`button#${selectId}[role="combobox"]`);
+  await trigger.waitFor({ state: 'visible', timeout: 5000 });
   await trigger.click();
   
-  // 옵션이 나타날 때까지 대기
-  await page.waitForSelector('[role="option"]', { timeout: 5000 });
+  // SelectContent가 나타날 때까지 대기
+  await page.waitForSelector('[role="listbox"], [role="option"]', { timeout: 5000 });
   
-  // 옵션 선택
-  await page.getByRole('option', { name: option }).click();
+  // 옵션 선택 (정확한 텍스트 매칭 또는 부분 매칭)
+  const optionLocator = page.getByRole('option').filter({ hasText: option });
+  await optionLocator.waitFor({ state: 'visible', timeout: 5000 });
+  await optionLocator.click();
   
-  // Select가 닫힐 때까지 대기
-  await page.waitForTimeout(200);
+  // Select가 닫힐 때까지 대기 (옵션이 사라질 때까지)
+  await page.waitForSelector('[role="listbox"]', { state: 'hidden', timeout: 2000 }).catch(() => {
+    // 이미 닫혔을 수 있음
+  });
 }

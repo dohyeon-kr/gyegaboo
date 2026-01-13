@@ -10,8 +10,8 @@ test.describe('통계 조회', () => {
   test('통계 페이지 접근', async ({ page }) => {
     await page.goto('/statistics');
     
-    // 통계 페이지 요소 확인 (더 구체적인 selector 사용)
-    await expect(page.getByRole('heading', { name: /통계/i })).toBeVisible({ timeout: 5000 });
+    // 통계 페이지 요소 확인 (CardTitle로 확인)
+    await expect(page.getByRole('heading', { name: /총 수입/i })).toBeVisible({ timeout: 5000 });
   });
 
   test('통계 데이터 표시', async ({ page }) => {

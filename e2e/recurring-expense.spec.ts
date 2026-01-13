@@ -26,7 +26,7 @@ test.describe('고정비 관리', () => {
     // Radix UI Select 사용
     await selectOptionById(page, 'category', '기타');
     await selectOptionById(page, 'type', '지출');
-    await selectOptionById(page, 'repeatType', '월간');
+    await selectOptionById(page, 'repeatType', '매월');
     await page.getByLabel(/반복일/i).fill('15');
     await page.getByLabel(/시작일/i).fill('2024-01-15');
     
@@ -51,7 +51,7 @@ test.describe('고정비 관리', () => {
     await page.getByLabel(/금액/i).fill('500000');
     await selectOptionById(page, 'category', '기타');
     await selectOptionById(page, 'type', '지출');
-    await selectOptionById(page, 'repeatType', '월간');
+    await selectOptionById(page, 'repeatType', '매월');
     await page.getByLabel(/시작일/i).fill('2024-01-01');
     await page.getByRole('button', { name: /저장/i }).click();
     
@@ -77,7 +77,7 @@ test.describe('고정비 관리', () => {
     await page.getByLabel(/금액/i).fill('50000');
     await selectOptionById(page, 'category', '기타');
     await selectOptionById(page, 'type', '지출');
-    await selectOptionById(page, 'repeatType', '월간');
+    await selectOptionById(page, 'repeatType', '매월');
     await page.getByLabel(/시작일/i).fill('2024-01-01');
     await page.getByRole('button', { name: /저장/i }).click();
     

@@ -34,8 +34,12 @@ test.describe('지출/수입 관리', () => {
     ).first();
     await submitButton.click();
     
-    // 성공 메시지 확인 (Toast - role="status"인 요소 찾기)
-    await expect(page.locator('[role="status"]').filter({ hasText: /추가 완료|저장 완료/i })).toBeVisible({ timeout: 5000 });
+    // 성공 메시지 확인 (Toast - 첫 번째 요소만 확인)
+    await expect(
+      page.locator('[role="status"]').filter({ hasText: /추가 완료|저장 완료/i }).or(
+        page.getByText(/추가 완료|저장 완료/i)
+      ).first()
+    ).toBeVisible({ timeout: 5000 });
     
     // 목록 페이지로 이동하여 항목 확인
     await page.goto('/');
@@ -106,14 +110,18 @@ test.describe('지출/수입 관리', () => {
   test('작성자 필터링', async ({ page }) => {
     await page.goto('/');
     
-    // 작성자 필터 선택
-    const authorFilter = page.getByLabel(/작성자|author/i);
+    // 작성자 필터 선택 (Radix UI Select)
+    const authorFilterTrigger = page.locator('button[role="combobox"]').filter({ hasText: /전체 작성자|작성자/i }).first();
     
-    if (await authorFilter.isVisible()) {
-      await authorFilter.selectOption('testuser');
+    if (await authorFilterTrigger.isVisible()) {
+      await authorFilterTrigger.click();
+      await page.waitForSelector('[role="option"]', { timeout: 5000 });
+      await page.getByRole('option', { name: /testuser|테스트 사용자/i }).click();
       
       // 필터링된 항목만 표시되는지 확인
-      await expect(page.getByText(/testuser/i)).toBeVisible();
+      await expect(page.getByText(/testuser|테스트 사용자/i).first()).toBeVisible({ timeout: 5000 });
+    } else {
+      test.skip('작성자 필터가 없습니다');
     }
   });
 

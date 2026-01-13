@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser } from './helpers/auth';
+import { selectOptionById } from './helpers/select';
 
 test.describe('고정비 관리', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,27 +18,33 @@ test.describe('고정비 관리', () => {
   test('고정비 추가', async ({ page }) => {
     await page.goto('/recurring');
     
-    // 고정비 추가 폼 찾기
-    const nameInput = page.getByLabel(/이름|name/i);
-    const amountInput = page.getByLabel(/금액|amount/i);
-    const categorySelect = page.getByLabel(/카테고리|category/i);
-    const repeatTypeSelect = page.getByLabel(/반복|repeat/i);
+    // 추가 버튼 클릭하여 폼 표시
+    await page.getByRole('button', { name: /추가/i }).click();
     
-    if (await nameInput.isVisible()) {
-      await nameInput.fill('관리비');
-      await amountInput.fill('100000');
-      await categorySelect.selectOption('기타');
-      await repeatTypeSelect.selectOption('monthly');
-      
-      // 저장 버튼 클릭
-      await page.getByRole('button', { name: /추가|저장|save/i }).click();
-      
-      // 추가 완료 확인
-      await expect(page.getByText(/추가 완료|저장 완료/i)).toBeVisible({ timeout: 5000 });
-      
-      // 목록에 추가된 항목 확인
-      await expect(page.getByText(/관리비/i)).toBeVisible();
-    }
+    // 고정비 추가 폼 작성
+    await page.getByLabel(/이름/i).fill('관리비');
+    await page.getByLabel(/금액/i).fill('100000');
+    await selectOptionById(page, 'category', '기타');
+    await selectOptionById(page, 'type', '지출');
+    await selectOptionById(page, 'repeatType', '매월');
+    await page.getByLabel(/반복일/i).fill('15');
+    await page.getByLabel(/시작일/i).fill('2024-01-15');
+    
+    // 저장 버튼 클릭
+    const submitButton = page.locator('button[type="submit"]').or(
+      page.getByRole('button', { name: /저장/i })
+    ).first();
+    await submitButton.click();
+    
+    // 추가 완료 확인 (Toast - 첫 번째 요소만 확인)
+    await expect(
+      page.locator('[role="status"]').filter({ hasText: /추가 완료|저장 완료/i }).or(
+        page.getByText(/추가 완료|저장 완료/i)
+      ).first()
+    ).toBeVisible({ timeout: 5000 });
+    
+    // 목록에 추가된 항목 확인
+    await expect(page.getByText(/관리비/i).first()).toBeVisible({ timeout: 5000 });
   });
 
   test('고정비 수정', async ({ page }) => {
