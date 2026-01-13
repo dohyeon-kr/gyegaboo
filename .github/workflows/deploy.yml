@@ -45,7 +45,7 @@ jobs:
           
           npm run build
 
-      # 🔹 서버 실행 디렉토리로 동기화 (shared, node_modules 제외)
+      # 🔹 서버 실행 디렉토리로 동기화 (shared 제외)
       - name: Sync App Code
         run: |
           APP_ROOT=/home/ec2-user/apps/gyegaboo
@@ -55,20 +55,16 @@ jobs:
           rsync -a --delete \
             --exclude shared \
             --exclude .git \
-            --exclude node_modules \
             ./ "$APP_ROOT/"
 
-      # 🔹 배포 디렉토리에서 의존성 설치 및 Prisma 설정
-      - name: Install Dependencies and Setup Prisma
+      # 🔹 Prisma 설정
+      - name: Setup Prisma
         run: |
           export NVM_DIR="$HOME/.nvm"
           source "$NVM_DIR/nvm.sh"
 
           APP_ROOT=/home/ec2-user/apps/gyegaboo
           cd "$APP_ROOT"
-
-          # 배포 디렉토리에서 의존성 설치 (node_modules 재생성)
-          npm ci
 
           export DATABASE_URL="file:$APP_ROOT/shared/data/gyegaboo.db"
 
