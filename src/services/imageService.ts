@@ -1,5 +1,6 @@
 import type { ImageUploadResponse } from '../types';
-import { getAuthHeaders, authenticatedFetch } from '../utils/apiClient';
+import { authenticatedFetch } from '../utils/apiClient';
+import { authService } from './authService';
 
 // 이미지 업로드 및 OCR 서비스
 const IMAGE_API_URL = import.meta.env.VITE_IMAGE_API_URL || 'http://localhost:3001/api/image';
@@ -15,9 +16,13 @@ export class ImageService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const headers = getAuthHeaders();
-      // FormData를 사용할 때는 Content-Type을 설정하지 않음
-      delete headers['Content-Type'];
+      const token = authService.getToken();
+      const headers: HeadersInit = {};
+      
+      // FormData를 사용할 때는 Content-Type을 설정하지 않음 (브라우저가 자동 설정)
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
       const response = await fetch(`${IMAGE_API_URL}/upload`, {
         method: 'POST',
@@ -26,7 +31,8 @@ export class ImageService {
       });
 
       if (!response.ok) {
-        throw new Error('이미지 업로드 실패');
+        const errorData = await response.json().catch(() => ({ error: '이미지 업로드 실패' }));
+        throw new Error(errorData.error || `서버 오류: ${response.status}`);
       }
 
       const data = await response.json();

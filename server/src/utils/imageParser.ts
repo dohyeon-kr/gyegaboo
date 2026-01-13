@@ -1,5 +1,6 @@
 import type { ExpenseItem } from '../../../src/types/index.js';
 import { openai } from './openaiClient.js';
+import { generateUniqueId } from './idGenerator.js';
 
 /**
  * OpenAI Vision API를 사용하여 이미지에서 가계부 데이터를 추출합니다
