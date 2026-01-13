@@ -19,6 +19,11 @@ shared/
 node_modules/.prisma/
 *.db
 e2e-test.db
+e2e-test-data/
+test-results/
+playwright-report/
+playwright/.cache/
+e2e-test.db
 test-results/
 playwright-report/
 playwright/.cache/

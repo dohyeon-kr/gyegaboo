@@ -209,40 +209,75 @@ export const expenseQueries = {
   },
 
   createMany: async (items: ExpenseItem[], createdBy?: string) => {
-    await prisma.expense.createMany({
-      data: items.map(item => ({
-        id: item.id,
-        date: item.date,
-        amount: item.amount,
-        category: item.category,
-        description: item.description,
-        type: item.type,
-        imageUrl: item.imageUrl || null,
-        createdBy: createdBy || null,
-      })),
-      skipDuplicates: true,
-    });
+    // SQLite는 skipDuplicates를 지원하지 않으므로 개별적으로 처리
+    const createdItems: Array<ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }> = [];
 
-    // 생성된 항목들을 다시 조회하여 작성자 정보 포함
-    const ids = items.map(i => i.id);
-    const expenses = await prisma.expense.findMany({
-      where: { id: { in: ids } },
-      include: {
-        creator: {
-          select: {
-            nickname: true,
-            username: true,
-            profileImageUrl: true,
-          },
-        },
-      },
-    });
+    for (const item of items) {
+      try {
+        // 먼저 존재하는지 확인
+        const existing = await prisma.expense.findUnique({
+          where: { id: item.id },
+        });
 
-    return expenses.map(e => ({
-      ...e,
-      createdByUsername: e.creator?.nickname || e.creator?.username,
-      createdByProfileImageUrl: e.creator?.profileImageUrl || undefined,
-    })) as Array<ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }>;
+        if (!existing) {
+          // 존재하지 않으면 생성
+          const expense = await prisma.expense.create({
+            data: {
+              id: item.id,
+              date: item.date,
+              amount: item.amount,
+              category: item.category,
+              description: item.description,
+              type: item.type,
+              imageUrl: item.imageUrl || null,
+              createdBy: createdBy || null,
+            },
+            include: {
+              creator: {
+                select: {
+                  nickname: true,
+                  username: true,
+                  profileImageUrl: true,
+                },
+              },
+            },
+          });
+
+          createdItems.push({
+            ...expense,
+            createdByUsername: expense.creator?.nickname || expense.creator?.username,
+            createdByProfileImageUrl: expense.creator?.profileImageUrl || undefined,
+          } as ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string });
+        } else {
+          // 이미 존재하면 조회만 수행
+          const expense = await prisma.expense.findUnique({
+            where: { id: item.id },
+            include: {
+              creator: {
+                select: {
+                  nickname: true,
+                  username: true,
+                  profileImageUrl: true,
+                },
+              },
+            },
+          });
+
+          if (expense) {
+            createdItems.push({
+              ...expense,
+              createdByUsername: expense.creator?.nickname || expense.creator?.username,
+              createdByProfileImageUrl: expense.creator?.profileImageUrl || undefined,
+            } as ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string });
+          }
+        }
+      } catch (error) {
+        // 에러 발생 시 로그만 남기고 계속 진행
+        console.error(`Failed to create expense ${item.id}:`, error);
+      }
+    }
+
+    return createdItems;
   },
 
   update: async (id: string, updates: Partial<ExpenseItem>) => {
