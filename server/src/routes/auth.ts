@@ -128,6 +128,9 @@ export async function authRoutes(fastify: FastifyInstance) {
   // 초대 토큰 생성 (인증된 사용자만 가능)
   fastify.post('/invite', {
     preHandler: [fastify.authenticate],
+    schema: {
+      body: {},
+    },
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const currentUser = request.user as { id: string; username: string; isInitialAdmin: boolean };
