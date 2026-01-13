@@ -52,22 +52,25 @@ jobs:
 
           mkdir -p "$APP_ROOT"
 
-          # rsync로 코드 복사 (node_modules 포함, 심볼릭 링크 유지)
+          # rsync로 코드 복사 (node_modules 포함, 심볼릭 링크 유지, 바이너리 파일 포함)
           rsync -avL --delete \
             --exclude shared \
             --exclude .git \
             --exclude test-results \
             --exclude playwright-report \
             --exclude e2e-test.db \
+            --exclude '*.log' \
             ./ "$APP_ROOT/"
           
-          # node_modules가 제대로 복사되었는지 확인
-          if [ ! -d "$APP_ROOT/node_modules/pathe" ]; then
-            echo "Warning: pathe module not found, reinstalling dependencies..."
-            cd "$APP_ROOT"
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            npm ci --prefer-offline --no-audit
+          # Prisma 바이너리 파일 확인 및 재설치 필요 시 처리
+          cd "$APP_ROOT"
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+          
+          # Prisma 바이너리 파일이 없으면 재설치
+          if [ ! -f "$APP_ROOT/node_modules/.bin/prisma_schema_build_bg.wasm" ] || [ ! -d "$APP_ROOT/node_modules/pathe" ]; then
+            echo "Warning: Prisma binaries or dependencies missing, reinstalling..."
+            npm ci --prefer-offline --no-audit --ignore-scripts=false
           fi
 
       # 🔹 Prisma 설정
