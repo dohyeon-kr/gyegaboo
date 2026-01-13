@@ -12,6 +12,8 @@ import { authRoutes } from './routes/auth.js';
 import { processRecurringExpenses } from './utils/recurringExpenseProcessor.js';
 import { mkdir } from 'fs/promises';
 import { join } from 'path';
+import { readFileSync } from 'fs';
+import { getFilePath } from './utils/fileStorage.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
@@ -78,6 +80,32 @@ async function start() {
   await fastify.register(imageRoutes, { prefix: '/api/image' });
   await fastify.register(expenseRoutes, { prefix: '/api/expenses' });
   await fastify.register(recurringExpenseRoutes, { prefix: '/api/recurring-expenses' });
+
+  // 정적 파일 서빙 (업로드된 이미지)
+  fastify.get('/uploads/*', async (request, reply) => {
+    const url = request.url;
+    const filePath = getFilePath(url);
+    
+    try {
+      const file = readFileSync(filePath);
+      const ext = filePath.split('.').pop()?.toLowerCase();
+      
+      // MIME 타입 설정
+      const mimeTypes: Record<string, string> = {
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        png: 'image/png',
+        gif: 'image/gif',
+        webp: 'image/webp',
+      };
+      
+      const contentType = mimeTypes[ext || ''] || 'application/octet-stream';
+      reply.type(contentType);
+      return file;
+    } catch (error) {
+      reply.code(404).send({ error: 'File not found' });
+    }
+  });
 
   // Health check
   fastify.get('/health', async () => {

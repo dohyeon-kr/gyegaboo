@@ -124,7 +124,7 @@ export function Profile() {
               <div className="relative shrink-0">
                 {preview ? (
                   <img
-                    src={preview}
+                    src={preview.startsWith('data:') ? preview : `/api${preview}`}
                     alt="프로필"
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-border"
                   />

@@ -266,7 +266,7 @@ export function ExpenseList() {
                         {item.imageUrl && (
                           <div className="mt-2">
                             <img 
-                              src={item.imageUrl} 
+                              src={item.imageUrl.startsWith('data:') ? item.imageUrl : `/api${item.imageUrl}`}
                               alt="첨부 이미지" 
                               className="max-w-full sm:max-w-[200px] rounded-md border"
                             />

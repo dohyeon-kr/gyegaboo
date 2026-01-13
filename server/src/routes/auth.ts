@@ -269,24 +269,31 @@ export async function authRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: '이미지 파일을 업로드해주세요.' });
     }
 
-    // 이미지를 base64로 인코딩하여 저장 (실제 프로덕션에서는 S3 등에 저장)
-    const buffer = await data.toBuffer();
-    const base64Image = buffer.toString('base64');
-    const mimeType = data.mimetype || 'image/jpeg';
-    const imageUrl = `data:${mimeType};base64,${base64Image}`;
+    try {
+      const buffer = await data.toBuffer();
+      const mimeType = data.mimetype || 'image/jpeg';
+      
+      // 파일로 저장
+      const { saveProfileImage } = await import('../utils/fileStorage.js');
+      const imagePath = await saveProfileImage(buffer, currentUser.id, mimeType);
+      
+      // 데이터베이스에 경로 저장
+      const updated = userQueries.update(currentUser.id, { profile_image_url: imagePath });
+      
+      if (!updated) {
+        return reply.code(404).send({ error: '사용자를 찾을 수 없습니다.' });
+      }
 
-    const updated = userQueries.update(currentUser.id, { profile_image_url: imageUrl });
-    
-    if (!updated) {
-      return reply.code(404).send({ error: '사용자를 찾을 수 없습니다.' });
+      return {
+        id: updated.id,
+        username: updated.username,
+        nickname: updated.nickname || updated.username,
+        profileImageUrl: updated.profile_image_url,
+        isInitialAdmin: updated.is_initial_admin === 1,
+      };
+    } catch (error: any) {
+      fastify.log.error('프로필 이미지 업로드 오류:', error);
+      return reply.code(500).send({ error: '이미지 업로드에 실패했습니다.' });
     }
-
-    return {
-      id: updated.id,
-      username: updated.username,
-      nickname: updated.nickname || updated.username,
-      profileImageUrl: updated.profile_image_url,
-      isInitialAdmin: updated.is_initial_admin === 1,
-    };
   });
 }

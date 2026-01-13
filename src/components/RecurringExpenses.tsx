@@ -474,7 +474,7 @@ export function RecurringExpenses() {
                           <div className="flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary">
                             {item.createdByProfileImageUrl ? (
                               <img
-                                src={item.createdByProfileImageUrl}
+                                src={item.createdByProfileImageUrl.startsWith('data:') ? item.createdByProfileImageUrl : `/api${item.createdByProfileImageUrl}`}
                                 alt={item.createdByUsername || '작성자'}
                                 className="w-4 h-4 rounded-full object-cover"
                               />
