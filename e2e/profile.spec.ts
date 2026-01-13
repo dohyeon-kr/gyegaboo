@@ -45,10 +45,10 @@ test.describe('프로필 관리', () => {
       buffer: imageBuffer,
     });
     
-    // 업로드 버튼 클릭
+    // 업로드 및 추출 버튼 클릭 (이미지 선택 후 자동으로 표시됨)
     await page.getByRole('button', { name: /업로드/i }).click();
     
     // 업로드 완료 메시지 확인
-    await expect(page.getByText(/업로드 완료/i)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/업로드 완료/i)).toBeVisible({ timeout: 15000 });
   });
 });

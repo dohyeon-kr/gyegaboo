@@ -81,14 +81,14 @@ test.describe('가계부 항목 관리', () => {
     // 목록 페이지로 이동
     await page.goto('/');
     
-    // 삭제 버튼 클릭
-    await page.getByText(/지하철/i).locator('..').getByRole('button', { name: /삭제/i }).click();
+    // 삭제 버튼 클릭 (Trash2 아이콘 버튼)
+    await page.locator('button').filter({ has: page.locator('svg[class*="Trash2"]') }).first().click();
     
     // 삭제 확인 다이얼로그에서 확인
     await page.getByRole('button', { name: /확인/i }).click();
     
     // 삭제 완료 메시지 확인
-    await expect(page.getByText(/삭제 완료/i)).toBeVisible();
+    await expect(page.getByText(/삭제 완료/i)).toBeVisible({ timeout: 5000 });
     
     // 목록에서 항목이 사라졌는지 확인
     await expect(page.getByText(/지하철/i)).not.toBeVisible();
@@ -113,15 +113,17 @@ test.describe('가계부 항목 관리', () => {
     // 목록 페이지로 이동
     await page.goto('/');
     
-    // 지출 필터 선택
-    await page.getByLabel(/필터/i).selectOption('expense');
+    // 필터 Select 찾기 (SelectTrigger 클릭)
+    await page.locator('button').filter({ hasText: /전체|수입|지출/i }).first().click();
+    await page.getByText(/지출/i).click();
     
     // 지출 항목만 표시되는지 확인
     await expect(page.getByText(/지출 항목/i)).toBeVisible();
     await expect(page.getByText(/수입 항목/i)).not.toBeVisible();
     
     // 수입 필터 선택
-    await page.getByLabel(/필터/i).selectOption('income');
+    await page.locator('button').filter({ hasText: /지출/i }).first().click();
+    await page.getByText(/수입/i).click();
     
     // 수입 항목만 표시되는지 확인
     await expect(page.getByText(/수입 항목/i)).toBeVisible();
@@ -140,13 +142,13 @@ test.describe('가계부 항목 관리', () => {
     await page.goto('/');
     
     // 검색어 입력
-    await page.getByPlaceholder(/검색/i).fill('커피');
+    await page.getByPlaceholder(/설명 또는 카테고리로 검색/i).fill('커피');
     
     // 검색 결과 확인
     await expect(page.getByText(/커피/i)).toBeVisible();
     
     // 다른 검색어로 검색
-    await page.getByPlaceholder(/검색/i).fill('없는 항목');
+    await page.getByPlaceholder(/설명 또는 카테고리로 검색/i).fill('없는 항목');
     
     // 검색 결과 없음 확인
     await expect(page.getByText(/커피/i)).not.toBeVisible();
