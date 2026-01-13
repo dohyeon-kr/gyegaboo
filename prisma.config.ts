@@ -2,6 +2,13 @@
 // npm install --save-dev prisma dotenv
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
+import { join } from "path";
+
+// shared/data 디렉토리 경로 설정
+const sharedDir = join(process.cwd(), 'shared');
+const dataDir = join(sharedDir, 'data');
+const dbPath = join(dataDir, 'gyegaboo.db');
+const databaseUrl = `file:${dbPath}`;
 
 export default defineConfig({
   schema: "prisma/schema.prisma",
@@ -9,6 +16,6 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: process.env["DATABASE_URL"] || databaseUrl,
   },
 });
