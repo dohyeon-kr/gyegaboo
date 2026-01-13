@@ -52,6 +52,28 @@ jobs:
             --exclude shared \
             ./ "$APP_ROOT/"
 
+      # 🔹 Prisma 마이그레이션 및 클라이언트 생성
+      - name: Run Prisma Migrations
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
+          APP_ROOT=/home/ec2-user/apps/gyegaboo
+          cd "$APP_ROOT"
+
+          export DATABASE_URL="file:$APP_ROOT/shared/data/gyegaboo.db"
+
+          # Prisma 클라이언트 생성
+          npx prisma generate
+
+          # 기존 데이터베이스가 있으면 마이그레이션 적용
+          if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
+            echo "Existing database found. Applying migrations..."
+            npx prisma migrate deploy || echo "Migration failed or no migrations to apply"
+          else
+            echo "No existing database. Schema will be created on first run."
+          fi
+
       # 🔹 Backend (pm2)
       - name: Deploy Backend
         run: |
