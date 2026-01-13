@@ -16,6 +16,7 @@ dist-ssr
 .env.local
 .env.*.local
 shared/
+node_modules/.prisma/
 *.db
 
 # Editor directories and files
@@ -28,3 +29,5 @@ shared/
 *.njsproj
 *.sln
 *.sw?
+
+/src/generated/prisma

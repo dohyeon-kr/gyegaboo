@@ -6,27 +6,27 @@ import { generateUniqueId } from './idGenerator.js';
 /**
  * 고정비를 처리하여 가계부 항목을 생성합니다
  */
-export function processRecurringExpenses(targetDate?: string): ExpenseItem[] {
+export async function processRecurringExpenses(targetDate?: string): Promise<ExpenseItem[]> {
   const today = targetDate || format(new Date(), 'yyyy-MM-dd');
   const todayDate = parseISO(today);
   const createdItems: ExpenseItem[] = [];
 
-  const activeRecurring = recurringExpenseQueries.getActive();
+  const activeRecurring = await recurringExpenseQueries.getActive();
 
   for (const recurring of activeRecurring) {
     // 만료일 확인
-    if (recurring.end_date && isAfter(todayDate, parseISO(recurring.end_date))) {
+    if (recurring.endDate && isAfter(todayDate, parseISO(recurring.endDate))) {
       continue;
     }
 
     // 시작일 확인
-    if (isBefore(todayDate, parseISO(recurring.start_date))) {
+    if (isBefore(todayDate, parseISO(recurring.startDate))) {
       continue;
     }
 
     // 마지막 처리일 확인
-    const lastProcessed = recurring.last_processed_date
-      ? parseISO(recurring.last_processed_date)
+    const lastProcessed = recurring.lastProcessedDate
+      ? parseISO(recurring.lastProcessedDate)
       : null;
 
     // 오늘 처리해야 하는지 확인
@@ -40,11 +40,11 @@ export function processRecurringExpenses(targetDate?: string): ExpenseItem[] {
         type: recurring.type,
       };
 
-      expenseQueries.create(item);
+      await expenseQueries.create(item, recurring.createdBy || undefined);
       createdItems.push(item);
 
       // 마지막 처리일 업데이트
-      recurringExpenseQueries.update(recurring.id, {
+      await recurringExpenseQueries.update(recurring.id, {
         lastProcessedDate: today,
       });
     }
@@ -61,9 +61,9 @@ function shouldProcessToday(
   today: Date,
   lastProcessed: Date | null
 ): boolean {
-  const startDate = parseISO(recurring.start_date);
+  const startDate = parseISO(recurring.startDate);
 
-  switch (recurring.repeat_type) {
+  switch (recurring.repeatType) {
     case 'daily':
       // 매일: 마지막 처리일이 없거나 어제 이전이면 처리
       if (!lastProcessed) {
@@ -72,9 +72,9 @@ function shouldProcessToday(
       return format(today, 'yyyy-MM-dd') > format(lastProcessed, 'yyyy-MM-dd');
 
     case 'weekly':
-      // 매주: repeat_day가 요일 (0=일요일, 6=토요일)
+      // 매주: repeatDay가 요일 (0=일요일, 6=토요일)
       const dayOfWeek = today.getDay();
-      if (recurring.repeat_day !== null && recurring.repeat_day !== dayOfWeek) {
+      if (recurring.repeatDay !== null && recurring.repeatDay !== dayOfWeek) {
         return false;
       }
       if (!lastProcessed) {
@@ -87,9 +87,9 @@ function shouldProcessToday(
       return weeksSinceLastProcess >= 1;
 
     case 'monthly':
-      // 매월: repeat_day가 월의 일자 (1-31)
+      // 매월: repeatDay가 월의 일자 (1-31)
       const dayOfMonth = today.getDate();
-      if (recurring.repeat_day !== null && recurring.repeat_day !== dayOfMonth) {
+      if (recurring.repeatDay !== null && recurring.repeatDay !== dayOfMonth) {
         return false;
       }
       if (!lastProcessed) {
@@ -123,11 +123,11 @@ function shouldProcessToday(
 /**
  * 특정 고정비를 수동으로 처리
  */
-export function processRecurringExpenseById(id: string, targetDate?: string): ExpenseItem | null {
+export async function processRecurringExpenseById(id: string, targetDate?: string): Promise<ExpenseItem | null> {
   const today = targetDate || format(new Date(), 'yyyy-MM-dd');
-  const recurring = recurringExpenseQueries.getById(id);
+  const recurring = await recurringExpenseQueries.getById(id);
 
-  if (!recurring || !recurring.is_active) {
+  if (!recurring || recurring.isActive !== 1) {
     return null;
   }
 
@@ -140,8 +140,8 @@ export function processRecurringExpenseById(id: string, targetDate?: string): Ex
     type: recurring.type,
   };
 
-  expenseQueries.create(item);
-  recurringExpenseQueries.update(id, {
+  await expenseQueries.create(item, recurring.createdBy || undefined);
+  await recurringExpenseQueries.update(id, {
     lastProcessedDate: today,
   });
 

@@ -9,7 +9,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   fastify.get('/', {
     preHandler: [fastify.authenticate],
   }, async () => {
-    const items = recurringExpenseQueries.getAll();
+    const items = await recurringExpenseQueries.getAll();
     return items.map((item) => ({
       id: item.id,
       name: item.name,
@@ -17,13 +17,13 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       category: item.category,
       description: item.description,
       type: item.type,
-      repeatType: item.repeat_type,
-      repeatDay: item.repeat_day,
-      startDate: item.start_date,
-      endDate: item.end_date,
-      lastProcessedDate: item.last_processed_date,
-      isActive: item.is_active === 1,
-      createdBy: item.created_by,
+      repeatType: item.repeatType,
+      repeatDay: item.repeatDay,
+      startDate: item.startDate,
+      endDate: item.endDate,
+      lastProcessedDate: item.lastProcessedDate,
+      isActive: item.isActive === 1,
+      createdBy: item.createdBy,
       createdByUsername: item.createdByUsername,
       createdByProfileImageUrl: item.createdByProfileImageUrl,
     }));
@@ -33,7 +33,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   fastify.get('/active', {
     preHandler: [fastify.authenticate],
   }, async () => {
-    const items = recurringExpenseQueries.getActive();
+    const items = await recurringExpenseQueries.getActive();
     return items.map((item) => ({
       id: item.id,
       name: item.name,
@@ -41,13 +41,13 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       category: item.category,
       description: item.description,
       type: item.type,
-      repeatType: item.repeat_type,
-      repeatDay: item.repeat_day,
-      startDate: item.start_date,
-      endDate: item.end_date,
-      lastProcessedDate: item.last_processed_date,
-      isActive: item.is_active === 1,
-      createdBy: item.created_by,
+      repeatType: item.repeatType,
+      repeatDay: item.repeatDay,
+      startDate: item.startDate,
+      endDate: item.endDate,
+      lastProcessedDate: item.lastProcessedDate,
+      isActive: item.isActive === 1,
+      createdBy: item.createdBy,
       createdByUsername: item.createdByUsername,
       createdByProfileImageUrl: item.createdByProfileImageUrl,
     }));
@@ -58,7 +58,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const item = recurringExpenseQueries.getById(id);
+    const item = await recurringExpenseQueries.getById(id);
 
     if (!item) {
       return reply.code(404).send({ error: 'Recurring expense not found' });
@@ -71,13 +71,13 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       category: item.category,
       description: item.description,
       type: item.type,
-      repeatType: item.repeat_type,
-      repeatDay: item.repeat_day,
-      startDate: item.start_date,
-      endDate: item.end_date,
-      lastProcessedDate: item.last_processed_date,
-      isActive: item.is_active === 1,
-      createdBy: item.created_by,
+      repeatType: item.repeatType,
+      repeatDay: item.repeatDay,
+      startDate: item.startDate,
+      endDate: item.endDate,
+      lastProcessedDate: item.lastProcessedDate,
+      isActive: item.isActive === 1,
+      createdBy: item.createdBy,
       createdByUsername: item.createdByUsername,
       createdByProfileImageUrl: item.createdByProfileImageUrl,
     };
@@ -114,7 +114,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       isActive: data.isActive !== false,
     };
 
-    const created = recurringExpenseQueries.create(item, user.id);
+    const created = await recurringExpenseQueries.create(item, user.id);
     return {
       id: created.id,
       name: created.name,
@@ -122,13 +122,13 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       category: created.category,
       description: created.description,
       type: created.type,
-      repeatType: created.repeat_type,
-      repeatDay: created.repeat_day,
-      startDate: created.start_date,
-      endDate: created.end_date,
-      lastProcessedDate: created.last_processed_date,
-      isActive: created.is_active === 1,
-      createdBy: created.created_by,
+      repeatType: created.repeatType,
+      repeatDay: created.repeatDay,
+      startDate: created.startDate,
+      endDate: created.endDate,
+      lastProcessedDate: created.lastProcessedDate,
+      isActive: created.isActive === 1,
+      createdBy: created.createdBy,
       createdByUsername: created.createdByUsername,
     };
   });
@@ -152,7 +152,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
     if (updates.endDate !== undefined) updateData.endDate = updates.endDate;
     if (updates.isActive !== undefined) updateData.isActive = updates.isActive;
 
-    const updated = recurringExpenseQueries.update(id, updateData);
+    const updated = await recurringExpenseQueries.update(id, updateData);
 
     if (!updated) {
       return reply.code(404).send({ error: 'Recurring expense not found' });
@@ -165,13 +165,13 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       category: updated.category,
       description: updated.description,
       type: updated.type,
-      repeatType: updated.repeat_type,
-      repeatDay: updated.repeat_day,
-      startDate: updated.start_date,
-      endDate: updated.end_date,
-      lastProcessedDate: updated.last_processed_date,
-      isActive: updated.is_active === 1,
-      createdBy: updated.created_by,
+      repeatType: updated.repeatType,
+      repeatDay: updated.repeatDay,
+      startDate: updated.startDate,
+      endDate: updated.endDate,
+      lastProcessedDate: updated.lastProcessedDate,
+      isActive: updated.isActive === 1,
+      createdBy: updated.createdBy,
       createdByUsername: updated.createdByUsername,
     };
   });
@@ -181,7 +181,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    recurringExpenseQueries.delete(id);
+    await recurringExpenseQueries.delete(id);
     return { success: true };
   });
 
@@ -190,7 +190,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request) => {
     const { targetDate } = request.body as { targetDate?: string };
-    const items = processRecurringExpenses(targetDate);
+    const items = await processRecurringExpenses(targetDate);
     return {
       success: true,
       items,
@@ -204,7 +204,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { targetDate } = request.body as { targetDate?: string };
-    const item = processRecurringExpenseById(id, targetDate);
+    const item = await processRecurringExpenseById(id, targetDate);
 
     if (!item) {
       return reply.code(404).send({ error: 'Recurring expense not found or inactive' });

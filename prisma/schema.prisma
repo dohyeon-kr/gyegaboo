@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id              String  @id
+  username        String  @unique
+  passwordHash    String  @map("password_hash")
+  nickname        String?
+  profileImageUrl String? @map("profile_image_url")
+  isInitialAdmin  Int     @default(0) @map("is_initial_admin")
+  createdAt       String  @default("CURRENT_TIMESTAMP") @map("created_at")
+
+  expenses          Expense[]
+  recurringExpenses RecurringExpense[]
+  invitationTokens  InvitationToken[]
+
+  @@map("users")
+}
+
+model Expense {
+  id          String  @id
+  date        String
+  amount      Int
+  category    String
+  description String
+  type        String // 'income' | 'expense'
+  imageUrl    String? @map("imageUrl")
+  createdBy   String? @map("created_by")
+
+  creator User? @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@map("expenses")
+}
+
+model Category {
+  id    String @id
+  name  String
+  type  String // 'income' | 'expense'
+  color String
+
+  @@map("categories")
+}
+
+model RecurringExpense {
+  id                String  @id
+  name              String
+  amount            Int
+  category          String
+  description       String
+  type              String // 'income' | 'expense'
+  repeatType        String  @map("repeat_type") // 'daily' | 'weekly' | 'monthly' | 'yearly'
+  repeatDay         Int?    @map("repeat_day")
+  startDate         String  @map("start_date")
+  endDate           String? @map("end_date")
+  lastProcessedDate String? @map("last_processed_date")
+  isActive          Int     @default(1) @map("is_active")
+  createdBy         String? @map("created_by")
+
+  creator User? @relation(fields: [createdBy], references: [id])
+
+  @@index([createdBy])
+  @@map("recurring_expenses")
+}
+
+model InvitationToken {
+  token     String  @id
+  createdBy String  @map("created_by")
+  createdAt String  @default("CURRENT_TIMESTAMP") @map("created_at")
+  expiresAt String  @map("expires_at")
+  used      Int     @default(0)
+  usedAt    String? @map("used_at")
+
+  creator User @relation(fields: [createdBy], references: [id])
+
+  @@map("invitation_tokens")
+}

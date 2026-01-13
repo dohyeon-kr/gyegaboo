@@ -7,7 +7,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
   fastify.get('/', {
     preHandler: [fastify.authenticate],
   }, async () => {
-    return expenseQueries.getAll();
+    return await expenseQueries.getAll();
   });
 
   // 항목 ID로 조회
@@ -15,7 +15,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const item = expenseQueries.getById(id);
+    const item = await expenseQueries.getById(id);
     
     if (!item) {
       return reply.code(404).send({ error: 'Item not found' });
@@ -35,7 +35,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid item data' });
     }
 
-    const created = expenseQueries.create(item, user.id);
+    const created = await expenseQueries.create(item, user.id);
     return created;
   });
 
@@ -50,7 +50,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'Items must be an array' });
     }
 
-    const created = expenseQueries.createMany(items, user.id);
+    const created = await expenseQueries.createMany(items, user.id);
     return created;
   });
 
@@ -61,7 +61,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const updates = request.body as Partial<ExpenseItem>;
     
-    const updated = expenseQueries.update(id, updates);
+    const updated = await expenseQueries.update(id, updates);
     
     if (!updated) {
       return reply.code(404).send({ error: 'Item not found' });
@@ -75,7 +75,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    expenseQueries.delete(id);
+    await expenseQueries.delete(id);
     return { success: true };
   });
 
@@ -83,7 +83,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
   fastify.get('/categories', {
     preHandler: [fastify.authenticate],
   }, async () => {
-    return categoryQueries.getAll();
+    return await categoryQueries.getAll();
   });
 
   // 카테고리 생성
@@ -96,7 +96,7 @@ export async function expenseRoutes(fastify: FastifyInstance) {
       return reply.code(400).send({ error: 'Invalid category data' });
     }
 
-    categoryQueries.create(category);
-    return category;
+    const created = await categoryQueries.create(category);
+    return created;
   });
 }

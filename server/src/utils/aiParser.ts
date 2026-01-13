@@ -259,7 +259,7 @@ export async function generateAIResponse(
     ) {
       const items = await parseExpenseFromText(lastMessage.content);
       if (items.length > 0) {
-        expenseQueries.createMany(items);
+        await expenseQueries.createMany(items);
         return {
           items,
           message: aiMessage || `${items.length}개의 항목이 추가되었습니다.`,

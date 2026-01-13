@@ -1,5 +1,5 @@
-import Database from 'better-sqlite3';
-import { join, dirname } from 'path';
+import { PrismaClient } from '@prisma/client';
+import { join } from 'path';
 import { mkdirSync, existsSync } from 'fs';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
@@ -13,121 +13,61 @@ if (!existsSync(dataDir)) {
 }
 
 const dbPath = join(dataDir, 'gyegaboo.db');
-const db = new Database(dbPath);
+const databaseUrl = `file:${dbPath}`;
 
-// 데이터베이스 초기화
-export function initDatabase() {
-  // expenses 테이블 생성
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS expenses (
-      id TEXT PRIMARY KEY,
-      date TEXT NOT NULL,
-      amount INTEGER NOT NULL,
-      category TEXT NOT NULL,
-      description TEXT NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-      imageUrl TEXT,
-      created_by TEXT,
-      FOREIGN KEY (created_by) REFERENCES users(id)
-    )
-  `);
+// 환경 변수 설정 (Prisma가 사용)
+process.env.DATABASE_URL = databaseUrl;
 
-  // 기존 테이블에 created_by 컬럼 추가 (마이그레이션)
-  try {
-    db.exec(`ALTER TABLE expenses ADD COLUMN created_by TEXT`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_expenses_created_by ON expenses(created_by)`);
-  } catch (error: any) {
-    // 컬럼이 이미 존재하는 경우 무시
-    if (!error.message.includes('duplicate column name')) {
-      console.warn('Failed to add created_by column to expenses:', error.message);
+// Prisma 클라이언트 생성
+export const prisma = new PrismaClient();
+
+// 데이터베이스 파일 존재 여부 확인
+const dbExists = existsSync(dbPath);
+
+// 데이터베이스 초기화 (파일이 없을 때만)
+export async function initDatabase() {
+  // 데이터베이스 파일이 이미 존재하면 초기화하지 않음
+  if (dbExists) {
+    console.log('Database file exists. Skipping initialization.');
+    // 기존 데이터베이스에 기본 카테고리만 확인하고 추가 (없는 경우)
+    try {
+      await seedDefaultCategories();
+    } catch (error) {
+      console.warn('Failed to seed default categories:', error);
     }
+    return;
   }
 
-  // categories 테이블 생성
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS categories (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-      color TEXT NOT NULL
-    )
-  `);
+  console.log('Initializing new database...');
 
-  // recurring_expenses 테이블 생성 (고정비)
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS recurring_expenses (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      amount INTEGER NOT NULL,
-      category TEXT NOT NULL,
-      description TEXT NOT NULL,
-      type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-      repeat_type TEXT NOT NULL CHECK(repeat_type IN ('daily', 'weekly', 'monthly', 'yearly')),
-      repeat_day INTEGER,
-      start_date TEXT NOT NULL,
-      end_date TEXT,
-      last_processed_date TEXT,
-      is_active INTEGER NOT NULL DEFAULT 1,
-      created_by TEXT,
-      FOREIGN KEY (created_by) REFERENCES users(id)
-    )
-  `);
-
-  // 기존 테이블에 created_by 컬럼 추가 (마이그레이션)
+  // Prisma db push를 사용하여 스키마 적용 (마이그레이션 없이)
+  const { execSync } = await import('child_process');
   try {
-    db.exec(`ALTER TABLE recurring_expenses ADD COLUMN created_by TEXT`);
-    db.exec(`CREATE INDEX IF NOT EXISTS idx_recurring_expenses_created_by ON recurring_expenses(created_by)`);
-  } catch (error: any) {
-    // 컬럼이 이미 존재하는 경우 무시
-    if (!error.message.includes('duplicate column name')) {
-      console.warn('Failed to add created_by column to recurring_expenses:', error.message);
-    }
+    // 환경 변수 설정
+    process.env.DATABASE_URL = databaseUrl;
+    execSync('npx prisma db push --accept-data-loss', { 
+      stdio: 'inherit',
+      env: { ...process.env, DATABASE_URL: databaseUrl },
+      cwd: process.cwd(),
+    });
+    console.log('Database schema created successfully');
+  } catch (error) {
+    console.error('Failed to create database schema:', error);
+    throw error;
   }
-
-  // users 테이블 생성
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS users (
-      id TEXT PRIMARY KEY,
-      username TEXT UNIQUE NOT NULL,
-      password_hash TEXT NOT NULL,
-      nickname TEXT,
-      profile_image_url TEXT,
-      is_initial_admin INTEGER NOT NULL DEFAULT 0,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-
-  // 기존 테이블에 nickname과 profile_image_url 컬럼 추가 (마이그레이션)
-  try {
-    db.exec(`ALTER TABLE users ADD COLUMN nickname TEXT`);
-  } catch (error: any) {
-    if (!error.message.includes('duplicate column name')) {
-      console.warn('Failed to add nickname column:', error.message);
-    }
-  }
-  
-  try {
-    db.exec(`ALTER TABLE users ADD COLUMN profile_image_url TEXT`);
-  } catch (error: any) {
-    if (!error.message.includes('duplicate column name')) {
-      console.warn('Failed to add profile_image_url column:', error.message);
-    }
-  }
-
-  // invitation_tokens 테이블 생성
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS invitation_tokens (
-      token TEXT PRIMARY KEY,
-      created_by TEXT NOT NULL,
-      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      expires_at TEXT NOT NULL,
-      used INTEGER NOT NULL DEFAULT 0,
-      used_at TEXT,
-      FOREIGN KEY (created_by) REFERENCES users(id)
-    )
-  `);
 
   // 기본 카테고리 추가
+  await seedDefaultCategories();
+
+  // 초기 admin 계정 생성
+  await createInitialAdmin();
+
+  console.log('Database initialized');
+}
+
+
+// 기본 카테고리 시드
+async function seedDefaultCategories() {
   const defaultCategories: Category[] = [
     { id: '1', name: '식비', type: 'expense', color: '#FF6B6B' },
     { id: '2', name: '교통비', type: 'expense', color: '#4ECDC4' },
@@ -138,30 +78,35 @@ export function initDatabase() {
     { id: '7', name: '부수입', type: 'income', color: '#4D96FF' },
   ];
 
-  const insertCategory = db.prepare(`
-    INSERT OR IGNORE INTO categories (id, name, type, color)
-    VALUES (?, ?, ?, ?)
-  `);
-
-  const insertManyCategories = db.transaction((categories: Category[]) => {
-    for (const cat of categories) {
-      insertCategory.run(cat.id, cat.name, cat.type, cat.color);
+  for (const cat of defaultCategories) {
+    try {
+      await prisma.category.upsert({
+        where: { id: cat.id },
+        update: {},
+        create: cat,
+      });
+    } catch (error) {
+      console.warn('Failed to seed category:', cat.name, error);
     }
-  });
+  }
+}
 
-  insertManyCategories(defaultCategories);
-
-  // 초기 admin 계정 생성 (없는 경우)
-  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
-  if (userCount.count === 0) {
+// 초기 admin 계정 생성
+async function createInitialAdmin() {
+  const userCount = await prisma.user.count();
+  if (userCount === 0) {
     const initialPassword = randomBytes(16).toString('hex');
     const passwordHash = bcrypt.hashSync(initialPassword, 10);
     const adminId = 'admin-' + Date.now();
     
-    db.prepare(`
-      INSERT INTO users (id, username, password_hash, is_initial_admin)
-      VALUES (?, ?, ?, ?)
-    `).run(adminId, 'admin', passwordHash, 1);
+    await prisma.user.create({
+      data: {
+        id: adminId,
+        username: 'admin',
+        passwordHash,
+        isInitialAdmin: 1,
+      },
+    });
     
     console.log('\n========================================');
     console.log('🔐 초기 관리자 계정이 생성되었습니다.');
@@ -172,194 +117,242 @@ export function initDatabase() {
     console.log('⚠️  이 비밀번호는 서버 관리자만 확인할 수 있습니다.');
     console.log('⚠️  새로운 관리자를 등록한 후 초기 계정은 자동으로 삭제됩니다.\n');
   }
-
-  console.log('Database initialized');
 }
 
 // ExpenseItem CRUD
 export const expenseQueries = {
-  getAll: () => {
-    return db.prepare(`
-      SELECT 
-        e.*,
-        COALESCE(u.nickname, u.username) as createdByUsername,
-        u.profile_image_url as createdByProfileImageUrl
-      FROM expenses e
-      LEFT JOIN users u ON e.created_by = u.id
-      ORDER BY e.date DESC
-    `).all() as Array<ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }>;
-  },
-
-  getById: (id: string) => {
-    return db.prepare(`
-      SELECT 
-        e.*,
-        COALESCE(u.nickname, u.username) as createdByUsername,
-        u.profile_image_url as createdByProfileImageUrl
-      FROM expenses e
-      LEFT JOIN users u ON e.created_by = u.id
-      WHERE e.id = ?
-    `).get(id) as (ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }) | undefined;
-  },
-
-  create: (item: ExpenseItem, createdBy?: string) => {
-    db.prepare(`
-      INSERT INTO expenses (id, date, amount, category, description, type, imageUrl, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      item.id,
-      item.date,
-      item.amount,
-      item.category,
-      item.description,
-      item.type,
-      item.imageUrl || null,
-      createdBy || null
-    );
-    return expenseQueries.getById(item.id)!;
-  },
-
-  createMany: (items: ExpenseItem[], createdBy?: string) => {
-    const insert = db.prepare(`
-      INSERT OR IGNORE INTO expenses (id, date, amount, category, description, type, imageUrl, created_by)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    const insertMany = db.transaction((items: ExpenseItem[]) => {
-      for (const item of items) {
-        try {
-          insert.run(
-            item.id,
-            item.date,
-            item.amount,
-            item.category,
-            item.description,
-            item.type,
-            item.imageUrl || null,
-            createdBy || null
-          );
-        } catch (error: any) {
-          // 중복 ID인 경우 무시하고 계속 진행
-          if (error?.code !== 'SQLITE_CONSTRAINT_PRIMARYKEY') {
-            throw error;
-          }
-        }
-      }
+  getAll: async () => {
+    const expenses = await prisma.expense.findMany({
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        date: 'desc',
+      },
     });
-    insertMany(items);
+
+    return expenses.map(e => ({
+      ...e,
+      createdByUsername: e.creator?.nickname || e.creator?.username,
+      createdByProfileImageUrl: e.creator?.profileImageUrl || undefined,
+    })) as Array<ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }>;
+  },
+
+  getById: async (id: string) => {
+    const expense = await prisma.expense.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!expense) return undefined;
+
+    return {
+      ...expense,
+      createdByUsername: expense.creator?.nickname || expense.creator?.username,
+      createdByProfileImageUrl: expense.creator?.profileImageUrl || undefined,
+    } as ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string };
+  },
+
+  create: async (item: ExpenseItem, createdBy?: string) => {
+    const expense = await prisma.expense.create({
+      data: {
+        id: item.id,
+        date: item.date,
+        amount: item.amount,
+        category: item.category,
+        description: item.description,
+        type: item.type,
+        imageUrl: item.imageUrl || null,
+        createdBy: createdBy || null,
+      },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    return {
+      ...expense,
+      createdByUsername: expense.creator?.nickname || expense.creator?.username,
+      createdByProfileImageUrl: expense.creator?.profileImageUrl || undefined,
+    } as ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string };
+  },
+
+  createMany: async (items: ExpenseItem[], createdBy?: string) => {
+    await prisma.expense.createMany({
+      data: items.map(item => ({
+        id: item.id,
+        date: item.date,
+        amount: item.amount,
+        category: item.category,
+        description: item.description,
+        type: item.type,
+        imageUrl: item.imageUrl || null,
+        createdBy: createdBy || null,
+      })),
+      skipDuplicates: true,
+    });
+
     // 생성된 항목들을 다시 조회하여 작성자 정보 포함
-    return expenseQueries.getAll().filter(e => items.some(i => i.id === e.id));
+    const ids = items.map(i => i.id);
+    const expenses = await prisma.expense.findMany({
+      where: { id: { in: ids } },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    return expenses.map(e => ({
+      ...e,
+      createdByUsername: e.creator?.nickname || e.creator?.username,
+      createdByProfileImageUrl: e.creator?.profileImageUrl || undefined,
+    })) as Array<ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string }>;
   },
 
-  update: (id: string, updates: Partial<ExpenseItem>) => {
-    const fields: string[] = [];
-    const values: any[] = [];
+  update: async (id: string, updates: Partial<ExpenseItem>) => {
+    const expense = await prisma.expense.update({
+      where: { id },
+      data: {
+        ...(updates.date !== undefined && { date: updates.date }),
+        ...(updates.amount !== undefined && { amount: updates.amount }),
+        ...(updates.category !== undefined && { category: updates.category }),
+        ...(updates.description !== undefined && { description: updates.description }),
+        ...(updates.type !== undefined && { type: updates.type }),
+        ...(updates.imageUrl !== undefined && { imageUrl: updates.imageUrl || null }),
+      },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
 
-    if (updates.date !== undefined) {
-      fields.push('date = ?');
-      values.push(updates.date);
-    }
-    if (updates.amount !== undefined) {
-      fields.push('amount = ?');
-      values.push(updates.amount);
-    }
-    if (updates.category !== undefined) {
-      fields.push('category = ?');
-      values.push(updates.category);
-    }
-    if (updates.description !== undefined) {
-      fields.push('description = ?');
-      values.push(updates.description);
-    }
-    if (updates.type !== undefined) {
-      fields.push('type = ?');
-      values.push(updates.type);
-    }
-    if (updates.imageUrl !== undefined) {
-      fields.push('imageUrl = ?');
-      values.push(updates.imageUrl);
-    }
-
-    if (fields.length === 0) return;
-
-    values.push(id);
-    db.prepare(`UPDATE expenses SET ${fields.join(', ')} WHERE id = ?`).run(...values);
-    return expenseQueries.getById(id);
+    return {
+      ...expense,
+      createdByUsername: expense.creator?.nickname || expense.creator?.username,
+      createdByProfileImageUrl: expense.creator?.profileImageUrl || undefined,
+    } as ExpenseItem & { createdByUsername?: string; createdByProfileImageUrl?: string };
   },
 
-  delete: (id: string) => {
-    db.prepare('DELETE FROM expenses WHERE id = ?').run(id);
+  delete: async (id: string) => {
+    await prisma.expense.delete({
+      where: { id },
+    });
   },
 };
 
 // Category CRUD
 export const categoryQueries = {
-  getAll: () => {
-    return db.prepare('SELECT * FROM categories').all() as Category[];
+  getAll: async () => {
+    return await prisma.category.findMany() as Category[];
   },
 
-  create: (category: Category) => {
-    db.prepare(`
-      INSERT INTO categories (id, name, type, color)
-      VALUES (?, ?, ?, ?)
-    `).run(category.id, category.name, category.type, category.color);
-    return category;
+  create: async (category: Category) => {
+    return await prisma.category.create({
+      data: category,
+    }) as Category;
   },
 };
 
 // RecurringExpense CRUD
 export const recurringExpenseQueries = {
-  getAll: () => {
-    return db.prepare(`
-      SELECT 
-        r.*,
-        COALESCE(u.nickname, u.username) as createdByUsername,
-        u.profile_image_url as createdByProfileImageUrl
-      FROM recurring_expenses r
-      LEFT JOIN users u ON r.created_by = u.id
-      ORDER BY r.start_date DESC
-    `).all() as Array<{
-      id: string;
-      name: string;
-      amount: number;
-      category: string;
-      description: string;
-      type: 'income' | 'expense';
-      repeat_type: 'daily' | 'weekly' | 'monthly' | 'yearly';
-      repeat_day: number | null;
-      start_date: string;
-      end_date: string | null;
-      last_processed_date: string | null;
-      is_active: number;
-      created_by: string | null;
-      createdByUsername?: string;
-    }>;
+  getAll: async () => {
+    const recurring = await prisma.recurringExpense.findMany({
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+      orderBy: {
+        startDate: 'desc',
+      },
+    });
+
+    return recurring.map(r => ({
+      ...r,
+      createdByUsername: r.creator?.nickname || r.creator?.username,
+      createdByProfileImageUrl: r.creator?.profileImageUrl || undefined,
+    }));
   },
 
-  getById: (id: string) => {
-    return db.prepare(`
-      SELECT 
-        r.*,
-        COALESCE(u.nickname, u.username) as createdByUsername,
-        u.profile_image_url as createdByProfileImageUrl
-      FROM recurring_expenses r
-      LEFT JOIN users u ON r.created_by = u.id
-      WHERE r.id = ?
-    `).get(id) as any;
+  getById: async (id: string) => {
+    const recurring = await prisma.recurringExpense.findUnique({
+      where: { id },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!recurring) return undefined;
+
+    return {
+      ...recurring,
+      createdByUsername: recurring.creator?.nickname || recurring.creator?.username,
+      createdByProfileImageUrl: recurring.creator?.profileImageUrl || undefined,
+    };
   },
 
-  getActive: () => {
-    return db.prepare(`
-      SELECT 
-        r.*,
-        COALESCE(u.nickname, u.username) as createdByUsername,
-        u.profile_image_url as createdByProfileImageUrl
-      FROM recurring_expenses r
-      LEFT JOIN users u ON r.created_by = u.id
-      WHERE r.is_active = 1
-    `).all() as any[];
+  getActive: async () => {
+    const recurring = await prisma.recurringExpense.findMany({
+      where: { isActive: 1 },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    return recurring.map(r => ({
+      ...r,
+      createdByUsername: r.creator?.nickname || r.creator?.username,
+      createdByProfileImageUrl: r.creator?.profileImageUrl || undefined,
+    }));
   },
 
-  create: (item: {
+  create: async (item: {
     id: string;
     name: string;
     amount: number;
@@ -372,30 +365,40 @@ export const recurringExpenseQueries = {
     endDate?: string;
     isActive: boolean;
   }, createdBy?: string) => {
-    db.prepare(`
-      INSERT INTO recurring_expenses (
-        id, name, amount, category, description, type,
-        repeat_type, repeat_day, start_date, end_date, is_active, created_by
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      item.id,
-      item.name,
-      item.amount,
-      item.category,
-      item.description,
-      item.type,
-      item.repeatType,
-      item.repeatDay || null,
-      item.startDate,
-      item.endDate || null,
-      item.isActive ? 1 : 0,
-      createdBy || null
-    );
-    return recurringExpenseQueries.getById(item.id);
+    const recurring = await prisma.recurringExpense.create({
+      data: {
+        id: item.id,
+        name: item.name,
+        amount: item.amount,
+        category: item.category,
+        description: item.description,
+        type: item.type,
+        repeatType: item.repeatType,
+        repeatDay: item.repeatDay || null,
+        startDate: item.startDate,
+        endDate: item.endDate || null,
+        isActive: item.isActive ? 1 : 0,
+        createdBy: createdBy || null,
+      },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
+
+    return {
+      ...recurring,
+      createdByUsername: recurring.creator?.nickname || recurring.creator?.username,
+      createdByProfileImageUrl: recurring.creator?.profileImageUrl || undefined,
+    };
   },
 
-  update: (id: string, updates: Partial<{
+  update: async (id: string, updates: Partial<{
     name: string;
     amount: number;
     category: string;
@@ -408,175 +411,142 @@ export const recurringExpenseQueries = {
     lastProcessedDate?: string;
     isActive: boolean;
   }>) => {
-    const fields: string[] = [];
-    const values: any[] = [];
+    const recurring = await prisma.recurringExpense.update({
+      where: { id },
+      data: {
+        ...(updates.name !== undefined && { name: updates.name }),
+        ...(updates.amount !== undefined && { amount: updates.amount }),
+        ...(updates.category !== undefined && { category: updates.category }),
+        ...(updates.description !== undefined && { description: updates.description }),
+        ...(updates.type !== undefined && { type: updates.type }),
+        ...(updates.repeatType !== undefined && { repeatType: updates.repeatType }),
+        ...(updates.repeatDay !== undefined && { repeatDay: updates.repeatDay }),
+        ...(updates.startDate !== undefined && { startDate: updates.startDate }),
+        ...(updates.endDate !== undefined && { endDate: updates.endDate }),
+        ...(updates.lastProcessedDate !== undefined && { lastProcessedDate: updates.lastProcessedDate }),
+        ...(updates.isActive !== undefined && { isActive: updates.isActive ? 1 : 0 }),
+      },
+      include: {
+        creator: {
+          select: {
+            nickname: true,
+            username: true,
+            profileImageUrl: true,
+          },
+        },
+      },
+    });
 
-    if (updates.name !== undefined) {
-      fields.push('name = ?');
-      values.push(updates.name);
-    }
-    if (updates.amount !== undefined) {
-      fields.push('amount = ?');
-      values.push(updates.amount);
-    }
-    if (updates.category !== undefined) {
-      fields.push('category = ?');
-      values.push(updates.category);
-    }
-    if (updates.description !== undefined) {
-      fields.push('description = ?');
-      values.push(updates.description);
-    }
-    if (updates.type !== undefined) {
-      fields.push('type = ?');
-      values.push(updates.type);
-    }
-    if (updates.repeatType !== undefined) {
-      fields.push('repeat_type = ?');
-      values.push(updates.repeatType);
-    }
-    if (updates.repeatDay !== undefined) {
-      fields.push('repeat_day = ?');
-      values.push(updates.repeatDay);
-    }
-    if (updates.startDate !== undefined) {
-      fields.push('start_date = ?');
-      values.push(updates.startDate);
-    }
-    if (updates.endDate !== undefined) {
-      fields.push('end_date = ?');
-      values.push(updates.endDate);
-    }
-    if (updates.lastProcessedDate !== undefined) {
-      fields.push('last_processed_date = ?');
-      values.push(updates.lastProcessedDate);
-    }
-    if (updates.isActive !== undefined) {
-      fields.push('is_active = ?');
-      values.push(updates.isActive ? 1 : 0);
-    }
-
-    if (fields.length === 0) return;
-
-    values.push(id);
-    db.prepare(`UPDATE recurring_expenses SET ${fields.join(', ')} WHERE id = ?`).run(...values);
-    return recurringExpenseQueries.getById(id);
+    return {
+      ...recurring,
+      createdByUsername: recurring.creator?.nickname || recurring.creator?.username,
+      createdByProfileImageUrl: recurring.creator?.profileImageUrl || undefined,
+    };
   },
 
-  delete: (id: string) => {
-    db.prepare('DELETE FROM recurring_expenses WHERE id = ?').run(id);
+  delete: async (id: string) => {
+    await prisma.recurringExpense.delete({
+      where: { id },
+    });
   },
 };
 
 // User CRUD
 export const userQueries = {
-  getByUsername: (username: string) => {
-    return db.prepare('SELECT * FROM users WHERE username = ?').get(username) as {
-      id: string;
-      username: string;
-      password_hash: string;
-      nickname: string | null;
-      profile_image_url: string | null;
-      is_initial_admin: number;
-      created_at: string;
-    } | undefined;
+  getByUsername: async (username: string) => {
+    return await prisma.user.findUnique({
+      where: { username },
+    });
   },
 
-  getById: (id: string) => {
-    return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as {
-      id: string;
-      username: string;
-      password_hash: string;
-      nickname: string | null;
-      profile_image_url: string | null;
-      is_initial_admin: number;
-      created_at: string;
-    } | undefined;
+  getById: async (id: string) => {
+    return await prisma.user.findUnique({
+      where: { id },
+    });
   },
 
-  create: (username: string, passwordHash: string) => {
+  create: async (username: string, passwordHash: string) => {
     const id = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
-    db.prepare(`
-      INSERT INTO users (id, username, password_hash, is_initial_admin)
-      VALUES (?, ?, ?, ?)
-    `).run(id, username, passwordHash, 0);
-    return userQueries.getById(id)!;
+    return await prisma.user.create({
+      data: {
+        id,
+        username,
+        passwordHash,
+        isInitialAdmin: 0,
+      },
+    });
   },
 
-  getAll: () => {
-    return db.prepare('SELECT id, username, nickname, profile_image_url, is_initial_admin, created_at FROM users ORDER BY created_at DESC').all() as Array<{
-      id: string;
-      username: string;
-      nickname: string | null;
-      profile_image_url: string | null;
-      is_initial_admin: number;
-      created_at: string;
-    }>;
+  getAll: async () => {
+    return await prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        nickname: true,
+        profileImageUrl: true,
+        isInitialAdmin: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   },
 
-  update: (id: string, updates: {
+  update: async (id: string, updates: {
     nickname?: string;
-    profile_image_url?: string;
+    profileImageUrl?: string;
   }) => {
-    const fields: string[] = [];
-    const values: any[] = [];
-
-    if (updates.nickname !== undefined) {
-      fields.push('nickname = ?');
-      values.push(updates.nickname || null);
-    }
-    if (updates.profile_image_url !== undefined) {
-      fields.push('profile_image_url = ?');
-      values.push(updates.profile_image_url || null);
-    }
-
-    if (fields.length === 0) return userQueries.getById(id);
-
-    values.push(id);
-    db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
-    return userQueries.getById(id);
+    return await prisma.user.update({
+      where: { id },
+      data: {
+        ...(updates.nickname !== undefined && { nickname: updates.nickname || null }),
+        ...(updates.profileImageUrl !== undefined && { profileImageUrl: updates.profileImageUrl || null }),
+      },
+    });
   },
 
-  deleteInitialAdmin: () => {
-    db.prepare('DELETE FROM users WHERE is_initial_admin = 1').run();
+  deleteInitialAdmin: async () => {
+    await prisma.user.deleteMany({
+      where: { isInitialAdmin: 1 },
+    });
   },
 
-  count: () => {
-    return (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
+  count: async () => {
+    return await prisma.user.count();
   },
 };
 
 // Invitation Token CRUD
 export const invitationTokenQueries = {
-  create: (token: string, createdBy: string, expiresAt: string) => {
-    db.prepare(`
-      INSERT INTO invitation_tokens (token, created_by, expires_at)
-      VALUES (?, ?, ?)
-    `).run(token, createdBy, expiresAt);
-    return invitationTokenQueries.getByToken(token);
+  create: async (token: string, createdBy: string, expiresAt: string) => {
+    return await prisma.invitationToken.create({
+      data: {
+        token,
+        createdBy,
+        expiresAt,
+      },
+    });
   },
 
-  getByToken: (token: string) => {
-    return db.prepare('SELECT * FROM invitation_tokens WHERE token = ?').get(token) as {
-      token: string;
-      created_by: string;
-      created_at: string;
-      expires_at: string;
-      used: number;
-      used_at: string | null;
-    } | undefined;
+  getByToken: async (token: string) => {
+    return await prisma.invitationToken.findUnique({
+      where: { token },
+    });
   },
 
-  markAsUsed: (token: string) => {
-    db.prepare(`
-      UPDATE invitation_tokens 
-      SET used = 1, used_at = datetime('now')
-      WHERE token = ?
-    `).run(token);
+  markAsUsed: async (token: string) => {
+    await prisma.invitationToken.update({
+      where: { token },
+      data: {
+        used: 1,
+        usedAt: new Date().toISOString(),
+      },
+    });
   },
 
-  isValid: (token: string): boolean => {
-    const tokenData = invitationTokenQueries.getByToken(token);
+  isValid: async (token: string): Promise<boolean> => {
+    const tokenData = await invitationTokenQueries.getByToken(token);
     if (!tokenData) {
       return false;
     }
@@ -588,41 +558,43 @@ export const invitationTokenQueries = {
 
     // 만료 시간 확인
     const now = new Date().toISOString();
-    if (tokenData.expires_at < now) {
+    if (tokenData.expiresAt < now) {
       return false;
     }
 
     return true;
   },
 
-  getAll: (createdBy?: string) => {
+  getAll: async (createdBy?: string) => {
     if (createdBy) {
-      return db.prepare(`
-        SELECT token, created_at, expires_at, used, used_at 
-        FROM invitation_tokens 
-        WHERE created_by = ?
-        ORDER BY created_at DESC
-      `).all(createdBy) as Array<{
-        token: string;
-        created_at: string;
-        expires_at: string;
-        used: number;
-        used_at: string | null;
-      }>;
+      return await prisma.invitationToken.findMany({
+        where: { createdBy },
+        select: {
+          token: true,
+          createdAt: true,
+          expiresAt: true,
+          used: true,
+          usedAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
     }
-    return db.prepare(`
-      SELECT token, created_by, created_at, expires_at, used, used_at 
-      FROM invitation_tokens 
-      ORDER BY created_at DESC
-    `).all() as Array<{
-      token: string;
-      created_by: string;
-      created_at: string;
-      expires_at: string;
-      used: number;
-      used_at: string | null;
-    }>;
+    return await prisma.invitationToken.findMany({
+      select: {
+        token: true,
+        createdBy: true,
+        createdAt: true,
+        expiresAt: true,
+        used: true,
+        usedAt: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   },
 };
 
-export default db;
+export default prisma;

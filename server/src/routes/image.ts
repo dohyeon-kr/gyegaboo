@@ -46,7 +46,7 @@ export async function imageRoutes(fastify: FastifyInstance) {
       }
       
       // 작성자 정보를 포함하여 저장
-      const created = expenseQueries.createMany(items, user.id);
+      const created = await expenseQueries.createMany(items, user.id);
 
     return {
       success: true,
@@ -83,7 +83,7 @@ export async function imageRoutes(fastify: FastifyInstance) {
       }
       
       // 작성자 정보를 포함하여 저장
-      const created = expenseQueries.createMany(items, user.id);
+      const created = await expenseQueries.createMany(items, user.id);
 
     return {
       success: true,

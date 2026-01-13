@@ -31,11 +31,11 @@ async function start() {
   }
 
   // 데이터베이스 초기화
-  initDatabase();
+  await initDatabase();
 
   // 서버 시작 시 고정비 처리
   try {
-    const processed = processRecurringExpenses();
+    const processed = await processRecurringExpenses();
     if (processed.length > 0) {
       console.log(`✅ ${processed.length}개의 고정비 항목이 자동으로 추가되었습니다.`);
     }
