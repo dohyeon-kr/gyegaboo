@@ -18,8 +18,14 @@ const databaseUrl = `file:${dbPath}`;
 // 환경 변수 설정 (Prisma가 사용)
 process.env.DATABASE_URL = databaseUrl;
 
-// Prisma 클라이언트 생성
-export const prisma = new PrismaClient();
+// Prisma 클라이언트 생성 (Prisma 7에서는 datasource를 명시적으로 전달)
+export const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: databaseUrl,
+    },
+  },
+});
 
 // 데이터베이스 파일 존재 여부 확인
 const dbExists = existsSync(dbPath);
