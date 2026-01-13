@@ -42,8 +42,32 @@ async function start() {
   });
 
   // CORS 설정
+  const allowedOrigins = [
+    'https://gyegaboo.dohyeon.kr',
+    'http://gyegaboo.dohyeon.kr',
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:4173',
+  ];
+
   await fastify.register(cors, {
-    origin: true, // 모든 origin 허용 (개발용)
+    origin: (origin, callback) => {
+      // origin이 없는 경우 (같은 도메인 요청 등) 허용
+      if (!origin) {
+        return callback(null, true);
+      }
+      // 허용된 origin 목록에 있는지 확인
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      // 개발 환경에서는 모든 origin 허용
+      if (process.env.NODE_ENV !== 'production') {
+        return callback(null, true);
+      }
+      // 프로덕션 환경에서 허용되지 않은 origin 거부
+      return callback(new Error('Not allowed by CORS'), false);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
     allowedHeaders: ['Content-Type', 'Authorization'], // 허용할 헤더
     credentials: true, // 쿠키 및 인증 정보 허용
