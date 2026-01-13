@@ -73,13 +73,15 @@ async function start() {
   });
 
   // 인증 라우트 등록 (인증 없이 접근 가능)
-  await fastify.register(authRoutes, { prefix: '/api/auth' });
+  // 프록시가 /api를 제거하므로 /auth로 등록
+  await fastify.register(authRoutes, { prefix: '/auth' });
 
   // 보호된 라우트 등록
-  await fastify.register(aiRoutes, { prefix: '/api/ai' });
-  await fastify.register(imageRoutes, { prefix: '/api/image' });
-  await fastify.register(expenseRoutes, { prefix: '/api/expenses' });
-  await fastify.register(recurringExpenseRoutes, { prefix: '/api/recurring-expenses' });
+  // 프록시가 /api를 제거하므로 prefix에서 /api 제거
+  await fastify.register(aiRoutes, { prefix: '/ai' });
+  await fastify.register(imageRoutes, { prefix: '/image' });
+  await fastify.register(expenseRoutes, { prefix: '/expenses' });
+  await fastify.register(recurringExpenseRoutes, { prefix: '/recurring-expenses' });
 
   // 정적 파일 서빙 (업로드된 이미지)
   fastify.get('/uploads/*', async (request, reply) => {
