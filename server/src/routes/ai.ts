@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { expenseQueries } from '../db.js';
+import { expenseQueries, recurringExpenseQueries } from '../db.js';
 import { generateAIResponse, parseExpenseFromText } from '../utils/aiParser.js';
 
 export async function aiRoutes(fastify: FastifyInstance) {
@@ -61,6 +61,16 @@ export async function aiRoutes(fastify: FastifyInstance) {
 
     const expenses = expenseQueries.getAll();
     const response = await generateAIResponse(messages, expenses);
+
+    if (response.recurringExpense) {
+      // 고정비 생성
+      recurringExpenseQueries.create(response.recurringExpense);
+      return {
+        success: true,
+        recurringExpense: response.recurringExpense,
+        message: response.message,
+      };
+    }
 
     return {
       success: true,

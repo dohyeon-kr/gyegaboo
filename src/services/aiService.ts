@@ -94,6 +94,7 @@ export class AIService {
       return {
         success: true,
         data: data.items || [],
+        recurringExpense: data.recurringExpense,
         message: data.message,
       };
     } catch (error) {
