@@ -54,27 +54,6 @@ jobs:
             --exclude .git \
             ./ "$APP_ROOT/"
 
-      # 🔹 Shared 디렉토리 및 데이터베이스 권한 설정
-      - name: Setup Shared Directory Permissions
-        run: |
-          APP_ROOT=/home/ec2-user/apps/gyegaboo
-          
-          # shared 디렉토리 생성 및 권한 설정
-          mkdir -p "$APP_ROOT/shared/data"
-          mkdir -p "$APP_ROOT/shared/uploads/profiles"
-          mkdir -p "$APP_ROOT/shared/uploads/receipts"
-          
-          # 디렉토리 권한 설정 (쓰기 가능)
-          chmod -R 755 "$APP_ROOT/shared"
-          
-          # 데이터베이스 파일이 있으면 권한 설정
-          if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
-            chmod 664 "$APP_ROOT/shared/data/gyegaboo.db"
-          fi
-          
-          # 소유권 설정 (ec2-user가 소유하도록)
-          chown -R ec2-user:ec2-user "$APP_ROOT/shared" || true
-
       # 🔹 Green-Blue 배포 스크립트 실행
       - name: Green-Blue Deploy
         env:
