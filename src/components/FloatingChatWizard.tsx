@@ -134,15 +134,37 @@ export function FloatingChatWizard() {
 
   if (!isOpen) {
     return (
-      <div className="fixed bottom-4 right-4 z-50">
-        <Button
-          type="button"
-          onClick={handleToggle}
-          size="lg"
-          className="rounded-full h-14 w-14 shadow-lg hover:scale-110 transition-transform"
-        >
-          <Bot className="h-6 w-6" />
-        </Button>
+      <div className="fixed bottom-6 right-6 z-50 group">
+        <div className="relative">
+          {/* 펄스 애니메이션 배경 */}
+          <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-20" style={{ animationDuration: '2s' }}></div>
+          <div className="absolute inset-0 rounded-full bg-primary/40 animate-pulse" style={{ animationDuration: '2s' }}></div>
+          
+          {/* 글로우 효과 */}
+          <div className="absolute inset-0 rounded-full bg-primary/20 blur-xl"></div>
+          
+          {/* 메인 버튼 */}
+          <Button
+            type="button"
+            onClick={handleToggle}
+            className="relative rounded-full h-16 w-16 shadow-2xl hover:scale-110 active:scale-95 transition-all duration-300 bg-gradient-to-br from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary/95 hover:to-primary border-2 border-primary-foreground/30 hover:border-primary-foreground/50"
+            style={{
+              boxShadow: '0 10px 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(59, 130, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+            }}
+          >
+            <div className="relative z-10 flex items-center justify-center">
+              <Sparkles className="h-7 w-7 text-primary-foreground" />
+            </div>
+          </Button>
+          
+          {/* 라벨 - 호버 시 표시 */}
+          <div className="absolute right-full mr-4 top-1/2 -translate-y-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none">
+            <div className="bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-xl text-sm font-semibold border border-primary-foreground/20">
+              AI 가이드
+            </div>
+            <div className="absolute left-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-primary"></div>
+          </div>
+        </div>
       </div>
     )
   }
