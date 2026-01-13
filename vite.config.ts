@@ -14,4 +14,13 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    host: true,
+    port: 4173,
+    allowedHosts: [
+      'gyegaboo.dohyeon.kr',
+      'localhost',
+      '127.0.0.1',
+    ],
+  },
 })
