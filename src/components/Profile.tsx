@@ -120,21 +120,21 @@ export function Profile() {
           {/* 프로필 이미지 */}
           <div className="space-y-4">
             <Label>프로필 이미지</Label>
-            <div className="flex items-center gap-4">
-              <div className="relative">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+              <div className="relative shrink-0">
                 {preview ? (
                   <img
                     src={preview}
                     alt="프로필"
-                    className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-2 border-border"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-border">
-                    <User className="h-12 w-12 text-muted-foreground" />
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-muted flex items-center justify-center border-2 border-border">
+                    <User className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
                   </div>
                 )}
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 w-full sm:w-auto">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -147,6 +147,7 @@ export function Profile() {
                   variant="outline"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={imageLoading}
+                  className="w-full sm:w-auto"
                 >
                   <Upload className="h-4 w-4 mr-2" />
                   이미지 선택
@@ -158,6 +159,7 @@ export function Profile() {
                       variant="outline"
                       onClick={handleUploadImage}
                       disabled={imageLoading}
+                      className="w-full sm:w-auto"
                     >
                       {imageLoading ? '업로드 중...' : '업로드'}
                     </Button>
@@ -166,7 +168,7 @@ export function Profile() {
                       variant="ghost"
                       onClick={handleRemoveImage}
                       disabled={imageLoading}
-                      className="text-destructive"
+                      className="text-destructive w-full sm:w-auto"
                     >
                       <X className="h-4 w-4 mr-2" />
                       제거

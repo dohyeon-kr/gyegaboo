@@ -49,30 +49,30 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="container mx-auto p-4 max-w-7xl">
-        <Card className="mb-6">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-3xl font-bold">가계부</h1>
+      <div className="container mx-auto p-2 sm:p-4 max-w-7xl">
+        <Card className="mb-4 sm:mb-6">
+          <div className="p-3 sm:p-6">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold">가계부</h1>
               <ThemeToggle />
             </div>
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
-              <TabsList className="grid w-full grid-cols-8">
-                <TabsTrigger value="list">목록</TabsTrigger>
-                <TabsTrigger value="statistics">통계</TabsTrigger>
-                <TabsTrigger value="ai">AI 대화</TabsTrigger>
-                <TabsTrigger value="image">이미지</TabsTrigger>
-                <TabsTrigger value="manual">수동 입력</TabsTrigger>
-                <TabsTrigger value="recurring">고정비</TabsTrigger>
-                <TabsTrigger value="invite">초대</TabsTrigger>
-                <TabsTrigger value="profile">프로필</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 sm:grid-cols-8 gap-1 sm:gap-2 overflow-x-auto">
+                <TabsTrigger value="list" className="text-xs sm:text-sm">목록</TabsTrigger>
+                <TabsTrigger value="statistics" className="text-xs sm:text-sm">통계</TabsTrigger>
+                <TabsTrigger value="ai" className="text-xs sm:text-sm">AI</TabsTrigger>
+                <TabsTrigger value="image" className="text-xs sm:text-sm">이미지</TabsTrigger>
+                <TabsTrigger value="manual" className="text-xs sm:text-sm">입력</TabsTrigger>
+                <TabsTrigger value="recurring" className="text-xs sm:text-sm">고정비</TabsTrigger>
+                <TabsTrigger value="invite" className="text-xs sm:text-sm">초대</TabsTrigger>
+                <TabsTrigger value="profile" className="text-xs sm:text-sm">프로필</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
         </Card>
 
         <Card>
-          <div className="p-6">
+          <div className="p-3 sm:p-6">
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
               <TabsContent value="list" className="mt-0">
                 <ExpenseList />

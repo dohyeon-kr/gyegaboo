@@ -75,9 +75,9 @@ export function ExpenseList() {
           <CardDescription>수입과 지출 내역을 확인하고 관리하세요</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6">
             <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="필터" />
               </SelectTrigger>
               <SelectContent>
@@ -87,7 +87,7 @@ export function ExpenseList() {
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
-              <SelectTrigger className="w-[140px]">
+              <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue placeholder="정렬" />
               </SelectTrigger>
               <SelectContent>
@@ -107,10 +107,10 @@ export function ExpenseList() {
                 <Card key={item.id} className="border-l-4" style={{
                   borderLeftColor: item.type === 'income' ? 'hsl(142, 71%, 45%)' : 'hsl(0, 84%, 60%)'
                 }}>
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
                           <span className="text-xs text-muted-foreground">
                             {format(parseISO(item.date), 'yyyy-MM-dd')}
                           </span>
@@ -127,29 +127,29 @@ export function ExpenseList() {
                             ) : (
                               <div className="w-4 h-4 rounded-full bg-muted" />
                             )}
-                            <span>{item.createdByUsername || '시스템'}</span>
+                            <span className="truncate">{item.createdByUsername || '시스템'}</span>
                           </div>
                         </div>
-                        <p className="text-sm font-medium">{item.description}</p>
+                        <p className="text-sm font-medium break-words">{item.description}</p>
                         {item.imageUrl && (
                           <div className="mt-2">
                             <img 
                               src={item.imageUrl} 
                               alt="첨부 이미지" 
-                              className="max-w-[200px] rounded-md border"
+                              className="max-w-full sm:max-w-[200px] rounded-md border"
                             />
                           </div>
                         )}
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className={`text-right ${item.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                      <div className="flex items-center justify-between sm:justify-end gap-3 sm:flex-col sm:items-end">
+                        <div className={`text-right sm:text-right ${item.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                           <div className="flex items-center gap-1">
                             {item.type === 'income' ? (
                               <TrendingUp className="h-4 w-4" />
                             ) : (
                               <TrendingDown className="h-4 w-4" />
                             )}
-                            <span className="font-bold">
+                            <span className="font-bold text-sm sm:text-base">
                               {item.type === 'income' ? '+' : '-'}
                               {item.amount.toLocaleString()}원
                             </span>
@@ -160,7 +160,7 @@ export function ExpenseList() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteClick(item)}
-                          className="text-destructive hover:text-destructive"
+                          className="text-destructive hover:text-destructive shrink-0"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>

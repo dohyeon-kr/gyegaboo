@@ -90,13 +90,13 @@ export function ImageUpload() {
         <CardDescription>영수증이나 가계부 이미지를 업로드하세요</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="border-2 border-dashed rounded-lg p-8 text-center">
+        <div className="border-2 border-dashed rounded-lg p-4 sm:p-8 text-center">
           {preview ? (
             <div className="space-y-4">
               <img 
                 src={preview} 
                 alt="미리보기" 
-                className="max-w-full max-h-96 mx-auto rounded-lg border"
+                className="max-w-full max-h-64 sm:max-h-96 mx-auto rounded-lg border"
               />
               <Button
                 type="button"
@@ -116,8 +116,8 @@ export function ImageUpload() {
             </div>
           ) : (
             <div className="space-y-4">
-              <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground" />
-              <p className="text-muted-foreground">
+              <ImageIcon className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground" />
+              <p className="text-sm sm:text-base text-muted-foreground">
                 영수증이나 가계부 이미지를 업로드하세요
               </p>
               <input

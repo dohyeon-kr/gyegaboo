@@ -232,17 +232,17 @@ export function RecurringExpenses() {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <CardTitle>고정비 관리</CardTitle>
               <CardDescription>반복되는 수입/지출을 자동으로 관리하세요</CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button type="button" onClick={handleProcess} variant="outline">
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button type="button" onClick={handleProcess} variant="outline" className="w-full sm:w-auto">
                 <Play className="h-4 w-4 mr-2" />
                 지금 처리하기
               </Button>
-              <Button type="button" onClick={() => setShowForm(!showForm)}>
+              <Button type="button" onClick={() => setShowForm(!showForm)} className="w-full sm:w-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 {showForm ? '취소' : '고정비 추가'}
               </Button>
@@ -258,7 +258,7 @@ export function RecurringExpenses() {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">이름 *</Label>
                   <Input
@@ -292,7 +292,7 @@ export function RecurringExpenses() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="category">카테고리 *</Label>
                   <Select
@@ -338,7 +338,7 @@ export function RecurringExpenses() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="repeatType">반복 유형 *</Label>
                   <Select
@@ -384,7 +384,7 @@ export function RecurringExpenses() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="startDate">시작일 *</Label>
                   <Input
@@ -463,10 +463,10 @@ export function RecurringExpenses() {
                     borderLeftColor: item.type === 'income' ? 'hsl(142, 71%, 45%)' : 'hsl(0, 84%, 60%)',
                   }}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
+                  <CardContent className="p-3 sm:p-4">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
                           <span className="font-semibold">{item.name}</span>
                           <span className="px-2 py-1 text-xs font-medium rounded-md bg-secondary">
                             {item.category}
@@ -481,7 +481,7 @@ export function RecurringExpenses() {
                             ) : (
                               <div className="w-4 h-4 rounded-full bg-muted" />
                             )}
-                            <span>{item.createdByUsername || '시스템'}</span>
+                            <span className="truncate">{item.createdByUsername || '시스템'}</span>
                           </div>
                           {!item.isActive && (
                             <span className="px-2 py-1 text-xs font-medium rounded-md bg-muted text-muted-foreground">
@@ -500,19 +500,19 @@ export function RecurringExpenses() {
                             </>
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-xs text-muted-foreground break-words">
                           시작: {format(parseISO(item.startDate), 'yyyy-MM-dd')}
                           {item.endDate && ` ~ ${format(parseISO(item.endDate), 'yyyy-MM-dd')}`}
                           {item.lastProcessedDate &&
                             ` | 마지막 처리: ${format(parseISO(item.lastProcessedDate), 'yyyy-MM-dd')}`}
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <div className={`text-right font-bold ${item.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
+                      <div className="flex items-center justify-between sm:justify-end gap-2 sm:flex-col sm:items-end">
+                        <div className={`text-right font-bold text-sm sm:text-base ${item.type === 'income' ? 'text-green-500' : 'text-red-500'}`}>
                           {item.type === 'income' ? '+' : '-'}
                           {item.amount.toLocaleString()}원
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-1 shrink-0">
                           <Button
                             type="button"
                             variant="ghost"

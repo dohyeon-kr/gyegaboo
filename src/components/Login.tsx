@@ -43,12 +43,12 @@ export function Login() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-background p-2 sm:p-4">
       <Card className="w-full max-w-md">
-        <div className="p-6 space-y-6">
+        <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           <div className="text-center">
-            <h1 className="text-3xl font-bold mb-2">가계부</h1>
-            <p className="text-muted-foreground">로그인하여 시작하세요</p>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">가계부</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">로그인하여 시작하세요</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
