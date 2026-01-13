@@ -209,22 +209,35 @@ export const expenseQueries = {
   },
 
   createMany: async (items: ExpenseItem[], createdBy?: string) => {
-    await prisma.expense.createMany({
-      data: items.map(item => ({
-        id: item.id,
-        date: item.date,
-        amount: item.amount,
-        category: item.category,
-        description: item.description,
-        type: item.type,
-        imageUrl: item.imageUrl || null,
-        createdBy: createdBy || null,
-      })),
-      skipDuplicates: true,
+    // SQLite에서는 skipDuplicates가 지원되지 않으므로 중복 체크 후 생성
+    const ids = items.map(i => i.id);
+    
+    // 이미 존재하는 항목 확인
+    const existing = await prisma.expense.findMany({
+      where: { id: { in: ids } },
+      select: { id: true },
     });
+    
+    const existingIds = new Set(existing.map(e => e.id));
+    const newItems = items.filter(item => !existingIds.has(item.id));
+    
+    // 새 항목만 생성
+    if (newItems.length > 0) {
+      await prisma.expense.createMany({
+        data: newItems.map(item => ({
+          id: item.id,
+          date: item.date,
+          amount: item.amount,
+          category: item.category,
+          description: item.description,
+          type: item.type,
+          imageUrl: item.imageUrl || null,
+          createdBy: createdBy || null,
+        })),
+      });
+    }
 
     // 생성된 항목들을 다시 조회하여 작성자 정보 포함
-    const ids = items.map(i => i.id);
     const expenses = await prisma.expense.findMany({
       where: { id: { in: ids } },
       include: {

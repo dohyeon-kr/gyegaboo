@@ -18,10 +18,6 @@ dist-ssr
 shared/
 node_modules/.prisma/
 *.db
-e2e-test.db
-test-results/
-playwright-report/
-playwright/.cache/
 
 # Editor directories and files
 .vscode/*
