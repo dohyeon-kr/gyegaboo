@@ -24,6 +24,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run semantic-release || true
 
+
   deploy:
     runs-on: self-hosted
     needs: release
@@ -40,16 +41,16 @@ jobs:
           npm ci
           npm run build
 
-      # 🔹 서버 실행 디렉토리로 이동 (덮어쓰기)
+      # 🔹 서버 실행 디렉토리로 동기화 (shared 제외)
       - name: Sync App Code
         run: |
           APP_ROOT=/home/ec2-user/apps/gyegaboo
-          APP_DIR=$APP_ROOT/app
 
-          mkdir -p "$APP_DIR"
+          mkdir -p "$APP_ROOT"
+
           rsync -a --delete \
             --exclude shared \
-            ./ "$APP_DIR/"
+            ./ "$APP_ROOT/"
 
       # 🔹 Backend (pm2)
       - name: Deploy Backend
@@ -58,7 +59,7 @@ jobs:
           source "$NVM_DIR/nvm.sh"
 
           APP_ROOT=/home/ec2-user/apps/gyegaboo
-          cd "$APP_ROOT/app"
+          cd "$APP_ROOT"
 
           export PORT=3001
           export DB_PATH="$APP_ROOT/shared/data/db.sqlite"
@@ -69,3 +70,4 @@ jobs:
             || pm2 start npm \
               --name gyegaboo-backend \
               -- run server
+
