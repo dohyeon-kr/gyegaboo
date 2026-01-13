@@ -33,7 +33,7 @@ export function ManualEntry() {
     }
 
     const newItem: ExpenseItem = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`,
       date: formData.date,
       amount: formData.amount,
       category: formData.category,

@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { recurringExpenseQueries } from '../db.js';
 import { processRecurringExpenses, processRecurringExpenseById } from '../utils/recurringExpenseProcessor.js';
+import { generateUniqueId } from '../utils/idGenerator.js';
 import type { RecurringExpense } from '../../../src/types/index.js';
 
 export async function recurringExpenseRoutes(fastify: FastifyInstance) {
