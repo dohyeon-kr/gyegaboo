@@ -9,6 +9,7 @@ import { useToast } from './ui/use-toast';
 export function ImageUpload() {
   const [loading, setLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addItems } = useExpenseStore();
   const { toast } = useToast();
@@ -16,6 +17,8 @@ export function ImageUpload() {
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setSelectedFile(file);
 
     // 이미지 미리보기
     const reader = new FileReader();
@@ -26,24 +29,41 @@ export function ImageUpload() {
   };
 
   const handleUpload = async () => {
-    const file = fileInputRef.current?.files?.[0];
-    if (!file) return;
+    if (!selectedFile) {
+      toast({
+        title: "오류",
+        description: "파일을 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     setLoading(true);
+    
     try {
-      const response = await ImageService.uploadAndExtract(file);
+      const response = await ImageService.uploadAndExtract(selectedFile);
       
       if (response.success && response.items && response.items.length > 0) {
-        await addItems(response.items);
-        toast({
-          title: "추가 완료",
-          description: `${response.items.length}개의 항목이 추가되었습니다.`,
-        });
-        // 초기화
-        if (fileInputRef.current) {
-          fileInputRef.current.value = '';
+        try {
+          await addItems(response.items);
+          toast({
+            title: "추가 완료",
+            description: `${response.items.length}개의 항목이 추가되었습니다.`,
+          });
+          // 초기화
+          setSelectedFile(null);
+          setPreview(null);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        } catch (addError) {
+          console.error('Error adding items:', addError);
+          toast({
+            title: "추가 실패",
+            description: addError instanceof Error ? addError.message : "항목 추가 중 오류가 발생했습니다.",
+            variant: "destructive",
+          });
         }
-        setPreview(null);
       } else {
         toast({
           title: "추출 실패",
@@ -52,12 +72,12 @@ export function ImageUpload() {
         });
       }
     } catch (error) {
+      console.error('Upload error:', error);
       toast({
         title: "오류",
-        description: "업로드 중 오류가 발생했습니다.",
+        description: error instanceof Error ? error.message : "업로드 중 오류가 발생했습니다.",
         variant: "destructive",
       });
-      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -81,7 +101,13 @@ export function ImageUpload() {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setPreview(null)}
+                onClick={() => {
+                  setPreview(null);
+                  setSelectedFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
                 className="w-full"
               >
                 <X className="h-4 w-4 mr-2" />
