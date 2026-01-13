@@ -1,4 +1,3 @@
-import { test as setup } from '@playwright/test';
 import { execSync } from 'child_process';
 import { existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
@@ -10,7 +9,7 @@ import bcrypt from 'bcryptjs';
  * - 테스트용 데이터베이스 초기화
  * - 테스트용 사용자 생성
  */
-setup('테스트 환경 설정', async () => {
+async function globalSetup() {
   const testDbPath = join(process.cwd(), 'e2e-test.db');
   
   // 기존 테스트 데이터베이스 삭제
@@ -46,6 +45,29 @@ setup('테스트 환경 설정', async () => {
   const prisma = new PrismaClient();
 
   try {
+    // 기본 카테고리 시드
+    const defaultCategories = [
+      { id: '1', name: '식비', type: 'expense', color: '#FF6B6B' },
+      { id: '2', name: '교통비', type: 'expense', color: '#4ECDC4' },
+      { id: '3', name: '쇼핑', type: 'expense', color: '#45B7D1' },
+      { id: '4', name: '의료비', type: 'expense', color: '#FFA07A' },
+      { id: '5', name: '기타', type: 'expense', color: '#98D8C8' },
+      { id: '6', name: '급여', type: 'income', color: '#6BCB77' },
+      { id: '7', name: '부수입', type: 'income', color: '#4D96FF' },
+    ];
+
+    for (const cat of defaultCategories) {
+      try {
+        await prisma.category.upsert({
+          where: { id: cat.id },
+          update: {},
+          create: cat,
+        });
+      } catch (error) {
+        console.warn('Failed to seed category:', cat.name, error);
+      }
+    }
+
     // 테스트용 사용자 생성
     const testUserPassword = 'testpass123';
     const testUserPasswordHash = bcrypt.hashSync(testUserPassword, 10);
@@ -65,12 +87,15 @@ setup('테스트 환경 설정', async () => {
     });
 
     console.log('Test user created: testuser / testpass123');
+    console.log('Default categories seeded');
   } catch (error) {
-    console.error('Failed to create test user:', error);
+    console.error('Failed to setup test data:', error);
     throw error;
   } finally {
     await prisma.$disconnect();
   }
 
   console.log('Test database setup completed');
-});
+}
+
+export default globalSetup;

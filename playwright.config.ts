@@ -1,4 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Read environment variables from file.
@@ -36,7 +41,7 @@ export default defineConfig({
   timeout: 60000,
   
   /* Setup 파일 실행 */
-  globalSetup: require.resolve('./e2e/setup.ts'),
+  globalSetup: resolve(__dirname, './e2e/setup.ts'),
 
   /* Configure projects for major browsers */
   projects: [
