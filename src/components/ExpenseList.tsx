@@ -4,6 +4,7 @@ import type { ExpenseItem } from '../types';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import {
   AlertDialog,
@@ -15,13 +16,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
-import { Trash2, TrendingUp, TrendingDown, Edit } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Edit, Search, X } from 'lucide-react';
 import { useToast } from './ui/use-toast';
 import { EditExpenseDialog } from './EditExpenseDialog';
 
 export function ExpenseList() {
   const { items, removeItem } = useExpenseStore();
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
+  const [authorFilter, setAuthorFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ExpenseItem | null>(null);
@@ -29,11 +32,37 @@ export function ExpenseList() {
   const [itemToEdit, setItemToEdit] = useState<ExpenseItem | null>(null);
   const { toast } = useToast();
 
+  // 고유한 작성자 목록 추출
+  const uniqueAuthors = useMemo(() => {
+    const authors = new Set<string>();
+    items.forEach((item) => {
+      if (item.createdByUsername) {
+        authors.add(item.createdByUsername);
+      }
+    });
+    return Array.from(authors).sort();
+  }, [items]);
+
   const filteredAndSortedItems = useMemo(() => {
     let filtered: ExpenseItem[] = items;
 
+    // 유형 필터
     if (filter !== 'all') {
-      filtered = items.filter((item) => item.type === filter);
+      filtered = filtered.filter((item) => item.type === filter);
+    }
+
+    // 작성자 필터
+    if (authorFilter !== 'all') {
+      filtered = filtered.filter((item) => item.createdByUsername === authorFilter);
+    }
+
+    // 검색어 필터
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter((item) =>
+        item.description.toLowerCase().includes(query) ||
+        item.category.toLowerCase().includes(query)
+      );
     }
 
     return [...filtered].sort((a, b) => {
@@ -43,7 +72,7 @@ export function ExpenseList() {
         return b.amount - a.amount;
       }
     });
-  }, [items, filter, sortBy]);
+  }, [items, filter, authorFilter, searchQuery, sortBy]);
 
   const handleDeleteClick = (item: ExpenseItem) => {
     setItemToDelete(item);
@@ -83,32 +112,127 @@ export function ExpenseList() {
           <CardDescription>수입과 지출 내역을 확인하고 관리하세요</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-2 sm:gap-4 mb-4 sm:mb-6">
-            <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <SelectValue placeholder="필터" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">전체</SelectItem>
-                <SelectItem value="income">수입</SelectItem>
-                <SelectItem value="expense">지출</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
-              <SelectTrigger className="w-full sm:w-[140px]">
-                <SelectValue placeholder="정렬" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="date">날짜순</SelectItem>
-                <SelectItem value="amount">금액순</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="space-y-4 mb-4 sm:mb-6">
+            {/* 검색 바 */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="설명 또는 카테고리로 검색..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 pr-9"
+              />
+              {searchQuery && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-1 top-1/2 transform -translate-y-1/2 h-7 w-7"
+                  onClick={() => setSearchQuery('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+
+            {/* 필터 및 정렬 */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
+              <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="유형" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체</SelectItem>
+                  <SelectItem value="income">수입</SelectItem>
+                  <SelectItem value="expense">지출</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Select value={authorFilter} onValueChange={setAuthorFilter}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="작성자" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">전체 작성자</SelectItem>
+                  {uniqueAuthors.map((author) => (
+                    <SelectItem key={author} value={author}>
+                      {author}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+                <SelectTrigger className="w-full sm:w-[140px]">
+                  <SelectValue placeholder="정렬" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date">날짜순</SelectItem>
+                  <SelectItem value="amount">금액순</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 필터 상태 표시 */}
+            {(filter !== 'all' || authorFilter !== 'all' || searchQuery.trim()) && (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <span className="text-muted-foreground">적용된 필터:</span>
+                {filter !== 'all' && (
+                  <span className="px-2 py-1 rounded-md bg-primary/10 text-primary">
+                    {filter === 'income' ? '수입' : '지출'}
+                  </span>
+                )}
+                {authorFilter !== 'all' && (
+                  <span className="px-2 py-1 rounded-md bg-primary/10 text-primary">
+                    작성자: {authorFilter}
+                  </span>
+                )}
+                {searchQuery.trim() && (
+                  <span className="px-2 py-1 rounded-md bg-primary/10 text-primary">
+                    검색: {searchQuery}
+                  </span>
+                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilter('all');
+                    setAuthorFilter('all');
+                    setSearchQuery('');
+                  }}
+                  className="h-7 text-xs"
+                >
+                  필터 초기화
+                </Button>
+              </div>
+            )}
           </div>
 
           <div className="space-y-3">
             {filteredAndSortedItems.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
-                <p>항목이 없습니다.</p>
+                <p>
+                  {items.length === 0
+                    ? '항목이 없습니다.'
+                    : '필터 조건에 맞는 항목이 없습니다.'}
+                </p>
+                {(filter !== 'all' || authorFilter !== 'all' || searchQuery.trim()) && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="mt-4"
+                    onClick={() => {
+                      setFilter('all');
+                      setAuthorFilter('all');
+                      setSearchQuery('');
+                    }}
+                  >
+                    필터 초기화
+                  </Button>
+                )}
               </div>
             ) : (
               filteredAndSortedItems.map((item) => (
