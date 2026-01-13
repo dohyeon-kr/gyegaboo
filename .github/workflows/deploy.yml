@@ -38,6 +38,11 @@ jobs:
   deploy:
       runs-on: self-hosted
       steps:
+        - name: Setup Node
+          run: |
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            node -v
         # 5️⃣ 프론트엔드 빌드
         - name: Build Frontend
           run: npm run build
