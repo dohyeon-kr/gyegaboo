@@ -62,7 +62,7 @@ jobs:
           cd "$APP_ROOT"
 
           export PORT=3001
-          export DB_PATH="$APP_ROOT/shared/data/db.sqlite"
+          export DATABASE_URL="file:$APP_ROOT/shared/data/gyegaboo.db"
           export UPLOAD_DIR="$APP_ROOT/shared/uploads"
           export FRONTEND_URL=${{ vars.FRONTEND_URL }}
           export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
