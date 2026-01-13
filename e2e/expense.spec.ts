@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser } from './helpers/auth';
+import { selectOptionById } from './helpers/select';
 
 test.describe('가계부 항목 관리', () => {
   test.beforeEach(async ({ page }) => {
@@ -11,49 +12,52 @@ test.describe('가계부 항목 관리', () => {
     await page.goto('/manual');
     
     // 폼 작성
-    await page.getByLabel(/날짜/i).fill('2024-01-15');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/금액/i).fill('5000');
-    await page.getByLabel(/카테고리/i).selectOption('식비');
-    await page.getByLabel(/설명/i).fill('점심 식사');
+    await page.locator('input#date').fill('2024-01-15');
+    await selectOptionById(page, 'type', '지출');
+    await page.locator('input#amount').fill('5000');
+    await selectOptionById(page, 'category', '식비');
+    await page.locator('input#description').fill('점심 식사');
     
-    // 저장 버튼 클릭
-    await page.getByRole('button', { name: /저장/i }).click();
+    // 저장 버튼 클릭 (form submit)
+    const submitButton = page.locator('button[type="submit"]').or(
+      page.getByRole('button', { name: /저장/i })
+    ).first();
+    await submitButton.click();
     
-    // 성공 메시지 확인
-    await expect(page.getByText(/추가 완료/i)).toBeVisible();
+    // 성공 메시지 확인 (Toast)
+    await expect(page.locator('[role="status"]').filter({ hasText: /추가 완료/i })).toBeVisible({ timeout: 5000 });
     
     // 목록 페이지로 이동하여 항목 확인
     await page.goto('/');
-    await expect(page.getByText(/점심 식사/i)).toBeVisible();
-    await expect(page.getByText(/5,000원/i)).toBeVisible();
+    await expect(page.getByText(/점심 식사/i).first()).toBeVisible();
+    await expect(page.getByText(/5,000/i).first()).toBeVisible();
   });
 
   test('수입 항목 추가', async ({ page }) => {
     await page.goto('/manual');
     
-    await page.getByLabel(/유형/i).selectOption('income');
-    await page.getByLabel(/금액/i).fill('100000');
-    await page.getByLabel(/카테고리/i).selectOption('급여');
-    await page.getByLabel(/설명/i).fill('월급');
+    await selectOptionById(page, 'type', '수입');
+    await page.locator('input#amount').fill('100000');
+    await selectOptionById(page, 'category', '급여');
+    await page.locator('input#description').fill('월급');
     
     await page.getByRole('button', { name: /저장/i }).click();
     
-    await expect(page.getByText(/추가 완료/i)).toBeVisible();
+    await expect(page.getByText(/추가 완료/i).first()).toBeVisible({ timeout: 5000 });
     
     // 목록에서 확인
     await page.goto('/');
-    await expect(page.getByText(/월급/i)).toBeVisible();
-    await expect(page.getByText(/100,000원/i)).toBeVisible();
+    await expect(page.getByText(/월급/i).first()).toBeVisible();
+    await expect(page.getByText(/100,000/i).first()).toBeVisible();
   });
 
   test('항목 수정', async ({ page }) => {
     // 먼저 항목 추가
     await page.goto('/manual');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/금액/i).fill('5000');
-    await page.getByLabel(/카테고리/i).selectOption('식비');
-    await page.getByLabel(/설명/i).fill('커피');
+    await selectOptionById(page, 'type', '지출');
+    await page.locator('input#amount').fill('5000');
+    await selectOptionById(page, 'category', '식비');
+    await page.locator('input#description').fill('커피');
     await page.getByRole('button', { name: /저장/i }).click();
     
     // 목록 페이지로 이동
@@ -73,10 +77,10 @@ test.describe('가계부 항목 관리', () => {
   test('항목 삭제', async ({ page }) => {
     // 항목 추가
     await page.goto('/manual');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/금액/i).fill('3000');
-    await page.getByLabel(/카테고리/i).selectOption('교통비');
-    await page.getByLabel(/설명/i).fill('지하철');
+    await selectOptionById(page, 'type', '지출');
+    await page.locator('input#amount').fill('3000');
+    await selectOptionById(page, 'category', '교통비');
+    await page.locator('input#description').fill('지하철');
     await page.getByRole('button', { name: /저장/i }).click();
     
     // 목록 페이지로 이동
@@ -98,17 +102,17 @@ test.describe('가계부 항목 관리', () => {
   test('항목 필터링 (지출/수입)', async ({ page }) => {
     // 지출 항목 추가
     await page.goto('/manual');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/금액/i).fill('5000');
-    await page.getByLabel(/카테고리/i).selectOption('식비');
-    await page.getByLabel(/설명/i).fill('지출 항목');
+    await selectOptionById(page, 'type', '지출');
+    await page.locator('input#amount').fill('5000');
+    await selectOptionById(page, 'category', '식비');
+    await page.locator('input#description').fill('지출 항목');
     await page.getByRole('button', { name: /저장/i }).click();
     
     // 수입 항목 추가
-    await page.getByLabel(/유형/i).selectOption('income');
-    await page.getByLabel(/금액/i).fill('100000');
-    await page.getByLabel(/카테고리/i).selectOption('급여');
-    await page.getByLabel(/설명/i).fill('수입 항목');
+    await selectOptionById(page, 'type', '수입');
+    await page.locator('input#amount').fill('100000');
+    await selectOptionById(page, 'category', '급여');
+    await page.locator('input#description').fill('수입 항목');
     await page.getByRole('button', { name: /저장/i }).click();
     
     // 목록 페이지로 이동
@@ -134,10 +138,10 @@ test.describe('가계부 항목 관리', () => {
   test('항목 검색', async ({ page }) => {
     // 항목 추가
     await page.goto('/manual');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/금액/i).fill('5000');
-    await page.getByLabel(/카테고리/i).selectOption('식비');
-    await page.getByLabel(/설명/i).fill('커피');
+    await selectOptionById(page, 'type', '지출');
+    await page.locator('input#amount').fill('5000');
+    await selectOptionById(page, 'category', '식비');
+    await page.locator('input#description').fill('커피');
     await page.getByRole('button', { name: /저장/i }).click();
     
     await page.goto('/');

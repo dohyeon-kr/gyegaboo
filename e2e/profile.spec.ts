@@ -10,8 +10,8 @@ test.describe('프로필 관리', () => {
   test('프로필 페이지 접근', async ({ page }) => {
     await page.goto('/profile');
     
-    // 프로필 페이지 요소 확인
-    await expect(page.getByText(/프로필|profile/i)).toBeVisible();
+    // 프로필 페이지 요소 확인 (더 구체적인 selector 사용)
+    await expect(page.getByRole('heading', { name: /프로필 설정/i })).toBeVisible();
   });
 
   test('닉네임 변경', async ({ page }) => {

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser } from './helpers/auth';
+import { selectOptionById } from './helpers/select';
 
 test.describe('고정비 관리', () => {
   test.beforeEach(async ({ page }) => {
@@ -9,8 +10,8 @@ test.describe('고정비 관리', () => {
   test('고정비 페이지 접근', async ({ page }) => {
     await page.goto('/recurring');
     
-    // 고정비 페이지 요소 확인
-    await expect(page.getByText(/고정비/i)).toBeVisible();
+    // 고정비 페이지 요소 확인 (더 구체적인 selector 사용)
+    await expect(page.getByRole('heading', { name: /고정비 관리/i })).toBeVisible();
   });
 
   test('고정비 추가', async ({ page }) => {
@@ -22,9 +23,10 @@ test.describe('고정비 관리', () => {
     // 고정비 추가 폼 작성
     await page.getByLabel(/이름/i).fill('관리비');
     await page.getByLabel(/금액/i).fill('100000');
-    await page.getByLabel(/카테고리/i).selectOption('기타');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/반복 유형/i).selectOption('monthly');
+    // Radix UI Select 사용
+    await selectOptionById(page, 'category', '기타');
+    await selectOptionById(page, 'type', '지출');
+    await selectOptionById(page, 'repeatType', '월간');
     await page.getByLabel(/반복일/i).fill('15');
     await page.getByLabel(/시작일/i).fill('2024-01-15');
     
@@ -47,9 +49,9 @@ test.describe('고정비 관리', () => {
     
     await page.getByLabel(/이름/i).fill('월세');
     await page.getByLabel(/금액/i).fill('500000');
-    await page.getByLabel(/카테고리/i).selectOption('기타');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/반복 유형/i).selectOption('monthly');
+    await selectOptionById(page, 'category', '기타');
+    await selectOptionById(page, 'type', '지출');
+    await selectOptionById(page, 'repeatType', '월간');
     await page.getByLabel(/시작일/i).fill('2024-01-01');
     await page.getByRole('button', { name: /저장/i }).click();
     
@@ -73,9 +75,9 @@ test.describe('고정비 관리', () => {
     
     await page.getByLabel(/이름/i).fill('통신비');
     await page.getByLabel(/금액/i).fill('50000');
-    await page.getByLabel(/카테고리/i).selectOption('기타');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/반복 유형/i).selectOption('monthly');
+    await selectOptionById(page, 'category', '기타');
+    await selectOptionById(page, 'type', '지출');
+    await selectOptionById(page, 'repeatType', '월간');
     await page.getByLabel(/시작일/i).fill('2024-01-01');
     await page.getByRole('button', { name: /저장/i }).click();
     

@@ -10,8 +10,8 @@ test.describe('고정비 관리', () => {
   test('고정비 페이지 접근', async ({ page }) => {
     await page.goto('/recurring');
     
-    // 고정비 페이지 요소 확인
-    await expect(page.getByText(/고정비|recurring/i)).toBeVisible();
+    // 고정비 페이지 요소 확인 (더 구체적인 selector 사용)
+    await expect(page.getByRole('heading', { name: /고정비 관리/i })).toBeVisible();
   });
 
   test('고정비 추가', async ({ page }) => {

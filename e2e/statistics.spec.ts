@@ -10,16 +10,17 @@ test.describe('통계 조회', () => {
   test('통계 페이지 접근', async ({ page }) => {
     await page.goto('/statistics');
     
-    // 통계 페이지 요소 확인
-    await expect(page.getByText(/통계|statistics/i)).toBeVisible();
+    // 통계 페이지 요소 확인 (더 구체적인 selector 사용)
+    await expect(page.getByRole('heading', { name: /통계/i })).toBeVisible({ timeout: 5000 });
   });
 
   test('통계 데이터 표시', async ({ page }) => {
     await page.goto('/statistics');
     
-    // 통계 정보가 표시되는지 확인
-    // 총 수입, 총 지출, 잔액 등
-    await expect(page.getByText(/총 수입|총 지출|잔액/i)).toBeVisible({ timeout: 5000 });
+    // 통계 정보가 표시되는지 확인 (각각 개별적으로 확인)
+    await expect(page.getByRole('heading', { name: /총 수입/i })).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('heading', { name: /총 지출/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /잔액/i })).toBeVisible();
   });
 
   test('기간별 통계 조회', async ({ page }) => {
