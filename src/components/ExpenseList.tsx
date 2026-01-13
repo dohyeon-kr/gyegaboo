@@ -146,7 +146,7 @@ export function ExpenseList() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => handleDelete(item.id)}
+                          onClick={() => handleDeleteClick(item)}
                           className="text-destructive hover:text-destructive"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -160,6 +160,43 @@ export function ExpenseList() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>항목 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말로 이 항목을 삭제하시겠습니까?
+              {itemToDelete && (
+                <>
+                  <br />
+                  <br />
+                  <strong>{itemToDelete.description}</strong>
+                  <br />
+                  {itemToDelete.type === 'income' ? '+' : '-'}
+                  {itemToDelete.amount.toLocaleString()}원
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    {format(parseISO(itemToDelete.date), 'yyyy-MM-dd')} · {itemToDelete.category}
+                  </span>
+                </>
+              )}
+              <br />
+              <br />
+              이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -145,14 +145,23 @@ export function RecurringExpenses() {
     setShowForm(true);
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDeleteClick = (item: RecurringExpense) => {
+    setItemToDelete(item);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!itemToDelete) return;
+
     try {
-      await RecurringExpenseService.delete(id);
+      await RecurringExpenseService.delete(itemToDelete.id);
       await loadItems();
       toast({
         title: "삭제 완료",
-        description: "삭제되었습니다.",
+        description: "고정비가 삭제되었습니다.",
       });
+      setDeleteDialogOpen(false);
+      setItemToDelete(null);
     } catch (error) {
       toast({
         title: "오류",
@@ -512,7 +521,7 @@ export function RecurringExpenses() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => handleDeleteClick(item)}
                             className="text-destructive hover:text-destructive"
                             title="삭제"
                           >
@@ -528,6 +537,53 @@ export function RecurringExpenses() {
           )}
         </CardContent>
       </Card>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>고정비 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              정말로 이 고정비를 삭제하시겠습니까?
+              {itemToDelete && (
+                <>
+                  <br />
+                  <br />
+                  <strong>{itemToDelete.name}</strong>
+                  <br />
+                  {itemToDelete.type === 'income' ? '+' : '-'}
+                  {itemToDelete.amount.toLocaleString()}원
+                  <br />
+                  <span className="text-xs text-muted-foreground">
+                    {getRepeatTypeLabel(itemToDelete.repeatType)}
+                    {itemToDelete.repeatDay !== undefined && itemToDelete.repeatDay !== null && (
+                      <>
+                        {' '}
+                        {itemToDelete.repeatType === 'weekly'
+                          ? `(${['일', '월', '화', '수', '목', '금', '토'][itemToDelete.repeatDay]}요일)`
+                          : `${itemToDelete.repeatDay}일`}
+                      </>
+                    )}
+                    {' · '}
+                    {itemToDelete.category}
+                  </span>
+                </>
+              )}
+              <br />
+              <br />
+              이 작업은 되돌릴 수 없으며, 이후 자동으로 생성되는 항목도 중단됩니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
