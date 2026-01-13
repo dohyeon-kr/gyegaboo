@@ -79,6 +79,7 @@ export function ImageUpload() {
                 className="max-w-full max-h-96 mx-auto rounded-lg border"
               />
               <Button
+                type="button"
                 variant="outline"
                 onClick={() => setPreview(null)}
                 className="w-full"
@@ -101,6 +102,7 @@ export function ImageUpload() {
                 className="hidden"
               />
               <Button
+                type="button"
                 onClick={() => fileInputRef.current?.click()}
                 variant="outline"
                 className="w-full"
@@ -113,6 +115,7 @@ export function ImageUpload() {
         </div>
         {preview && (
           <Button
+            type="button"
             onClick={handleUpload}
             disabled={loading}
             className="w-full"

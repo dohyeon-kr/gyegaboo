@@ -130,7 +130,7 @@ export function Register() {
             <p className="text-muted-foreground">
               초대 링크가 만료되었거나 이미 사용되었습니다.
             </p>
-            <Button onClick={() => window.location.href = '/'}>홈으로 돌아가기</Button>
+            <Button type="button" onClick={() => window.location.href = '/'}>홈으로 돌아가기</Button>
           </div>
         </Card>
       </div>

@@ -238,11 +238,11 @@ export function RecurringExpenses() {
               <CardDescription>반복되는 수입/지출을 자동으로 관리하세요</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleProcess} variant="outline">
+              <Button type="button" onClick={handleProcess} variant="outline">
                 <Play className="h-4 w-4 mr-2" />
                 지금 처리하기
               </Button>
-              <Button onClick={() => setShowForm(!showForm)}>
+              <Button type="button" onClick={() => setShowForm(!showForm)}>
                 <Plus className="h-4 w-4 mr-2" />
                 {showForm ? '취소' : '고정비 추가'}
               </Button>
@@ -505,6 +505,7 @@ export function RecurringExpenses() {
                         </div>
                         <div className="flex gap-1">
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => handleProcessById(item.id)}
@@ -514,6 +515,7 @@ export function RecurringExpenses() {
                             <Play className="h-4 w-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEdit(item)}
@@ -522,6 +524,7 @@ export function RecurringExpenses() {
                             <Edit className="h-4 w-4" />
                           </Button>
                           <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteClick(item)}

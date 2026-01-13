@@ -60,7 +60,7 @@ export function InviteMember() {
           </p>
         </div>
 
-        <Button onClick={handleCreateInvite} disabled={isLoading} className="w-full">
+        <Button type="button" onClick={handleCreateInvite} disabled={isLoading} className="w-full">
           {isLoading ? '링크 생성 중...' : '초대 링크 생성'}
         </Button>
 
@@ -75,6 +75,7 @@ export function InviteMember() {
                 className="flex-1 px-3 py-2 border rounded-md bg-background text-foreground"
               />
               <Button
+                type="button"
                 onClick={handleCopyLink}
                 variant="outline"
                 size="icon"

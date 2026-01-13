@@ -147,6 +147,7 @@ export function ExpenseList() {
                           </div>
                         </div>
                         <Button
+                          type="button"
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDeleteClick(item)}

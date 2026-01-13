@@ -151,7 +151,7 @@ export function AIChat() {
             disabled={loading}
             className="flex-1"
           />
-          <Button onClick={handleSend} disabled={loading || !input.trim()}>
+          <Button type="button" onClick={handleSend} disabled={loading || !input.trim()}>
             <Send className="h-4 w-4" />
           </Button>
         </div>
