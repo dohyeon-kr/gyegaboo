@@ -16,10 +16,14 @@ import { join } from 'path';
 const PORT = parseInt(process.env.PORT || '3001', 10);
 
 async function start() {
-  // data 디렉토리 생성
-  const dataDir = join(process.cwd(), 'data');
+  // shared 디렉토리 구조 생성
+  const sharedDir = join(process.cwd(), 'shared');
+  const dataDir = join(sharedDir, 'data');
+  const uploadsDir = join(sharedDir, 'uploads');
+  
   try {
     await mkdir(dataDir, { recursive: true });
+    await mkdir(uploadsDir, { recursive: true });
   } catch (error) {
     // 이미 존재하는 경우 무시
   }

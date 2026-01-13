@@ -5,8 +5,9 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { ExpenseItem, Category } from '../../src/types/index.js';
 
-// data 디렉토리 생성
-const dataDir = join(process.cwd(), 'data');
+// shared/data 디렉토리 생성
+const sharedDir = join(process.cwd(), 'shared');
+const dataDir = join(sharedDir, 'data');
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
 }

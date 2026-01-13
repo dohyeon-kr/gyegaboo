@@ -15,7 +15,7 @@ dist-ssr
 .env
 .env.local
 .env.*.local
-data/
+shared/
 *.db
 
 # Editor directories and files
