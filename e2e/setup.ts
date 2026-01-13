@@ -2,6 +2,8 @@ import { test as setup } from '@playwright/test';
 import { execSync } from 'child_process';
 import { existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 /**
  * E2E 테스트 전에 테스트 환경을 설정합니다.
@@ -21,7 +23,8 @@ setup('테스트 환경 설정', async () => {
   execSync(`mkdir -p ${testDataDir}`, { stdio: 'inherit' });
 
   // 환경 변수 설정
-  process.env.DATABASE_URL = `file:${testDbPath}`;
+  const databaseUrl = `file:${testDbPath}`;
+  process.env.DATABASE_URL = databaseUrl;
   process.env.NODE_ENV = 'test';
   process.env.PORT = '3001';
 
@@ -31,7 +34,7 @@ setup('테스트 환경 설정', async () => {
       stdio: 'inherit',
       env: {
         ...process.env,
-        DATABASE_URL: `file:${testDbPath}`,
+        DATABASE_URL: databaseUrl,
       },
     });
   } catch (error) {
@@ -39,7 +42,41 @@ setup('테스트 환경 설정', async () => {
     throw error;
   }
 
-  // 테스트용 사용자 생성 스크립트 실행
-  // (서버가 시작되면 initDatabase에서 초기 관리자가 생성됨)
+  // Prisma 클라이언트 생성
+  const prisma = new PrismaClient({
+    datasources: {
+      db: {
+        url: databaseUrl,
+      },
+    },
+  });
+
+  try {
+    // 테스트용 사용자 생성
+    const testUserPassword = 'testpass123';
+    const testUserPasswordHash = bcrypt.hashSync(testUserPassword, 10);
+
+    await prisma.user.upsert({
+      where: { username: 'testuser' },
+      update: {
+        passwordHash: testUserPasswordHash,
+      },
+      create: {
+        id: `test-user-${Date.now()}`,
+        username: 'testuser',
+        passwordHash: testUserPasswordHash,
+        nickname: '테스트 사용자',
+        isInitialAdmin: 0,
+      },
+    });
+
+    console.log('Test user created: testuser / testpass123');
+  } catch (error) {
+    console.error('Failed to create test user:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+
   console.log('Test database setup completed');
 });
