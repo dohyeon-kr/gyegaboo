@@ -16,16 +16,14 @@ const dbPath = join(dataDir, 'gyegaboo.db');
 const databaseUrl = `file:${dbPath}`;
 
 // 환경 변수 설정 (Prisma가 사용)
-process.env.DATABASE_URL = databaseUrl;
+// Prisma는 DATABASE_URL 환경 변수를 자동으로 읽습니다
+if (!process.env.DATABASE_URL) {
+  process.env.DATABASE_URL = databaseUrl;
+}
 
-// Prisma 클라이언트 생성 (Prisma 7에서는 datasource를 명시적으로 전달)
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: databaseUrl,
-    },
-  },
-});
+// Prisma 클라이언트 생성
+// 환경 변수 DATABASE_URL을 사용하므로 옵션 없이 생성 가능
+export const prisma = new PrismaClient();
 
 // 데이터베이스 파일 존재 여부 확인
 const dbExists = existsSync(dbPath);
