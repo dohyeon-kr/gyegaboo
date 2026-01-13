@@ -1,14 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from './helpers/auth';
 
 test.describe('통계 조회', () => {
   test.beforeEach(async ({ page }) => {
     // 테스트용 사용자로 로그인
-    await page.goto('/');
-    await page.getByLabel(/사용자명/i).fill('testuser');
-    await page.getByLabel(/비밀번호/i).fill('testpass123');
-    await page.getByRole('button', { name: /로그인/i }).click();
-    
-    await expect(page).toHaveURL('/');
+    await loginAsTestUser(page);
   });
 
   test('통계 페이지 접근', async ({ page }) => {

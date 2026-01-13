@@ -1,22 +1,19 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from './helpers/auth';
 
 test.describe('AI 위자드', () => {
   test.beforeEach(async ({ page }) => {
     // 테스트용 사용자로 로그인
-    await page.goto('/');
-    await page.getByLabel(/사용자명/i).fill('testuser');
-    await page.getByLabel(/비밀번호/i).fill('testpass123');
-    await page.getByRole('button', { name: /로그인/i }).click();
-    
-    await expect(page).toHaveURL('/');
+    await loginAsTestUser(page);
   });
 
   test('AI 위자드 버튼 표시', async ({ page }) => {
     await page.goto('/');
     
-    // 플로팅 AI 버튼 확인
-    const aiButton = page.getByRole('button').filter({ has: page.locator('svg') }).last();
-    await expect(aiButton).toBeVisible();
+    // 플로팅 AI 버튼 확인 (오른쪽 하단 고정 버튼)
+    // Sparkles 아이콘이 있는 버튼 찾기
+    const aiButton = page.locator('button').filter({ has: page.locator('svg') }).last();
+    await expect(aiButton).toBeVisible({ timeout: 5000 });
   });
 
   test('AI 위자드 열기 및 닫기', async ({ page }) => {

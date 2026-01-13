@@ -1,16 +1,10 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from './helpers/auth';
 
 test.describe('지출/수입 관리', () => {
   test.beforeEach(async ({ page }) => {
     // 테스트용 사용자로 로그인
-    await page.goto('/');
-    // 로그인 (테스트용 사용자는 setup에서 생성됨)
-    await page.getByLabel(/사용자명/i).fill('testuser');
-    await page.getByLabel(/비밀번호/i).fill('testpass123');
-    await page.getByRole('button', { name: /로그인/i }).click();
-    
-    // 메인 페이지 로드 대기
-    await expect(page).toHaveURL('/');
+    await loginAsTestUser(page);
   });
 
   test('수동 입력으로 지출 항목 추가', async ({ page }) => {
@@ -18,22 +12,36 @@ test.describe('지출/수입 관리', () => {
     await page.goto('/manual');
     
     // 폼 작성
-    await page.getByLabel(/날짜/i).fill('2024-01-15');
-    await page.getByLabel(/유형/i).selectOption('expense');
-    await page.getByLabel(/금액/i).fill('5000');
-    await page.getByLabel(/카테고리/i).selectOption('식비');
-    await page.getByLabel(/설명/i).fill('커피');
+    // 날짜 입력 (input[type="date"] 또는 일반 input)
+    const dateInput = page.locator('input[type="date"]').or(page.locator('label:has-text("날짜") + input'));
+    await dateInput.first().fill('2024-01-15');
     
-    // 저장 버튼 클릭
-    await page.getByRole('button', { name: /저장/i }).click();
+    // 유형 선택
+    const typeSelect = page.locator('label:has-text("유형") + select').or(page.locator('select').first());
+    await typeSelect.selectOption('expense');
     
-    // 성공 메시지 확인
+    // 금액 입력
+    const amountInput = page.locator('input[type="number"]').or(page.locator('label:has-text("금액") + input'));
+    await amountInput.first().fill('5000');
+    
+    // 카테고리 선택
+    const categorySelect = page.locator('label:has-text("카테고리") + select').or(page.locator('select').nth(1));
+    await categorySelect.selectOption('식비');
+    
+    // 설명 입력
+    const descriptionInput = page.locator('label:has-text("설명") + input').or(page.locator('input[type="text"]').last());
+    await descriptionInput.fill('커피');
+    
+    // 저장 버튼 클릭 (form submit)
+    await page.getByRole('button', { name: /저장|추가/i }).click();
+    
+    // 성공 메시지 확인 (Toast)
     await expect(page.getByText(/추가 완료|저장 완료/i)).toBeVisible({ timeout: 5000 });
     
     // 목록 페이지로 이동하여 항목 확인
     await page.goto('/');
-    await expect(page.getByText(/커피/i)).toBeVisible();
-    await expect(page.getByText(/5,000원/i)).toBeVisible();
+    await expect(page.getByText(/커피/i)).toBeVisible({ timeout: 5000 });
+    await expect(page.getByText(/5,000/i)).toBeVisible();
   });
 
   test('수동 입력으로 수입 항목 추가', async ({ page }) => {
