@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { loginAsTestUser } from './helpers/auth';
 
 test.describe('가계부 항목 관리', () => {
   test.beforeEach(async ({ page }) => {
-    await AuthHelper.login(page);
+    await loginAsTestUser(page);
   });
 
   test('수동 입력으로 지출 항목 추가', async ({ page }) => {

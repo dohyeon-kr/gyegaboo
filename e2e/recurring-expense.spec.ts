@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
-import { AuthHelper } from './helpers/auth';
+import { loginAsTestUser } from './helpers/auth';
 
 test.describe('고정비 관리', () => {
   test.beforeEach(async ({ page }) => {
-    await AuthHelper.login(page);
+    await loginAsTestUser(page);
   });
 
   test('고정비 페이지 접근', async ({ page }) => {
