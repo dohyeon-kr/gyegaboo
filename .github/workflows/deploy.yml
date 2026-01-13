@@ -50,10 +50,14 @@ jobs:
 
           rsync -a --delete \
             --exclude shared \
+            --exclude node_modules \
+            --exclude .git \
             ./ "$APP_ROOT/"
 
-      # 🔹 Backend (pm2)
-      - name: Deploy Backend
+      # 🔹 Green-Blue 배포 스크립트 실행
+      - name: Green-Blue Deploy
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           export NVM_DIR="$HOME/.nvm"
           source "$NVM_DIR/nvm.sh"
@@ -61,13 +65,24 @@ jobs:
           APP_ROOT=/home/ec2-user/apps/gyegaboo
           cd "$APP_ROOT"
 
-          export PORT=3001
-          export DB_PATH="$APP_ROOT/shared/data/db.sqlite"
-          export UPLOAD_DIR="$APP_ROOT/shared/uploads"
-          export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          # 배포 스크립트에 실행 권한 부여
+          chmod +x scripts/deploy-green-blue.sh || true
+          
+          # 배포 실행
+          bash scripts/deploy-green-blue.sh || {
+            echo "Green-Blue 배포 실패"
+            exit 1
+          }
 
-          pm2 restart gyegaboo-backend \
-            || pm2 start npm \
-              --name gyegaboo-backend \
-              -- run server
+      # 🔹 트래픽 전환 (선택사항 - nginx 사용 시)
+      - name: Switch Traffic
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
+          APP_ROOT=/home/ec2-user/apps/gyegaboo
+          cd "$APP_ROOT"
+
+          chmod +x scripts/switch-traffic.sh || true
+          bash scripts/switch-traffic.sh || echo "트래픽 전환 스크립트 실행 실패 (nginx 없을 수 있음)"
 

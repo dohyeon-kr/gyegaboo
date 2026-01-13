@@ -23,11 +23,11 @@ export default defineConfig({
     },
     preview: {
         host: true,
-        port: 4173,
+        port: parseInt(process.env.VITE_PREVIEW_PORT || "4173", 10),
         allowedHosts: ["gyegaboo.dohyeon.kr", "localhost", "127.0.0.1"],
         proxy: {
             "/api": {
-                target: "http://localhost:3001",
+                target: process.env.VITE_API_TARGET || "http://localhost:3001",
                 changeOrigin: true,
                 secure: false,
                 rewrite: (path) => path.replace(/^\/api/, ""),
