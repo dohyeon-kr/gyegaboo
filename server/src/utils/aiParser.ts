@@ -221,6 +221,36 @@ export async function generateAIResponse(
     const lastMessage = messages[messages.length - 1];
     const userText = lastMessage.content.toLowerCase();
 
+    // 고정비 키워드 확인 (일반 지출/수입보다 먼저 확인)
+    const recurringKeywords = [
+      '고정비',
+      '매월',
+      '매주',
+      '매일',
+      '매년',
+      '반복',
+      '정기',
+      '구독',
+      '월세',
+      '관리비',
+      '통신비',
+      '보험',
+    ];
+
+    const isRecurringRequest = recurringKeywords.some((keyword) => userText.includes(keyword));
+
+    if (isRecurringRequest) {
+      // 고정비 파싱 시도
+      const recurringExpense = await parseRecurringExpenseFromText(lastMessage.content, openai);
+      if (recurringExpense) {
+        return {
+          recurringExpense,
+          message: aiMessage || `고정비 "${recurringExpense.name}"가 추가되었습니다.`,
+        };
+      }
+    }
+
+    // 일반 지출/수입 확인
     if (
       userText.includes('지출') ||
       userText.includes('수입') ||
