@@ -1,6 +1,7 @@
 import type { ExpenseItem } from '../../../src/types/index.js';
 import { expenseQueries } from '../db.js';
 import { openai } from './openaiClient.js';
+import { generateUniqueId } from './idGenerator.js';
 
 /**
  * OpenAI API를 사용하여 자연어를 파싱하여 가계부 항목을 추출합니다
@@ -59,7 +60,7 @@ export async function parseExpenseFromText(text: string): Promise<ExpenseItem[]>
       type?: 'income' | 'expense';
     }> };
     const items: ExpenseItem[] = (parsed.items || []).map((item) => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       date: item.date || new Date().toISOString().split('T')[0],
       amount: typeof item.amount === 'string' ? parseInt(item.amount) : (item.amount || 0),
       category: item.category || '기타',
@@ -156,7 +157,7 @@ function parseExpenseFromTextFallback(text: string): ExpenseItem[] {
   }
 
   const item: ExpenseItem = {
-    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    id: generateUniqueId(),
     date,
     amount,
     category,

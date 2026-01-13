@@ -110,20 +110,27 @@ export const expenseQueries = {
 
   createMany: (items: ExpenseItem[]) => {
     const insert = db.prepare(`
-      INSERT INTO expenses (id, date, amount, category, description, type, imageUrl)
+      INSERT OR IGNORE INTO expenses (id, date, amount, category, description, type, imageUrl)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     const insertMany = db.transaction((items: ExpenseItem[]) => {
       for (const item of items) {
-        insert.run(
-          item.id,
-          item.date,
-          item.amount,
-          item.category,
-          item.description,
-          item.type,
-          item.imageUrl || null
-        );
+        try {
+          insert.run(
+            item.id,
+            item.date,
+            item.amount,
+            item.category,
+            item.description,
+            item.type,
+            item.imageUrl || null
+          );
+        } catch (error: any) {
+          // 중복 ID인 경우 무시하고 계속 진행
+          if (error?.code !== 'SQLITE_CONSTRAINT_PRIMARYKEY') {
+            throw error;
+          }
+        }
       }
     });
     insertMany(items);

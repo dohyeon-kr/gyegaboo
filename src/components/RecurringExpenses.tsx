@@ -74,7 +74,7 @@ export function RecurringExpenses() {
         });
       } else {
         const newItem: RecurringExpense = {
-          id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+          id: `${Date.now()}-${Math.random().toString(36).substring(2, 15)}-${Math.random().toString(36).substring(2, 15)}`,
           name: formData.name!,
           amount: formData.amount!,
           category: formData.category!,

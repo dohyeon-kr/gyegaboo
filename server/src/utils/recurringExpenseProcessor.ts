@@ -1,6 +1,7 @@
 import type { RecurringExpense, ExpenseItem } from '../../../src/types/index.js';
 import { expenseQueries, recurringExpenseQueries } from '../db.js';
 import { format, parseISO, addDays, addWeeks, addMonths, addYears, isBefore, isAfter } from 'date-fns';
+import { generateUniqueId } from './idGenerator.js';
 
 /**
  * 고정비를 처리하여 가계부 항목을 생성합니다
@@ -31,7 +32,7 @@ export function processRecurringExpenses(targetDate?: string): ExpenseItem[] {
     // 오늘 처리해야 하는지 확인
     if (shouldProcessToday(recurring, todayDate, lastProcessed)) {
       const item: ExpenseItem = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+        id: generateUniqueId(),
         date: today,
         amount: recurring.amount,
         category: recurring.category,

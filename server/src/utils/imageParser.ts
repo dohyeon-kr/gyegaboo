@@ -70,7 +70,7 @@ export async function extractExpensesFromImage(
       type?: 'income' | 'expense';
     }> };
     const items: ExpenseItem[] = (parsed.items || []).map((item) => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       date: item.date || new Date().toISOString().split('T')[0],
       amount: typeof item.amount === 'string' ? parseInt(item.amount) : (item.amount || 0),
       category: item.category || '기타',
@@ -146,7 +146,7 @@ export async function extractExpensesFromImageUrl(imageUrl: string): Promise<Exp
       type?: 'income' | 'expense';
     }> };
     const items: ExpenseItem[] = (parsed.items || []).map((item) => ({
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       date: item.date || new Date().toISOString().split('T')[0],
       amount: typeof item.amount === 'string' ? parseInt(item.amount) : (item.amount || 0),
       category: item.category || '기타',
@@ -185,7 +185,7 @@ function extractExpensesFromImageFallback(): ExpenseItem[] {
 
   return [
     {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+      id: generateUniqueId(),
       date: today,
       amount: 15000,
       category: '식비',
