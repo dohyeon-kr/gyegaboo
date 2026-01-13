@@ -42,14 +42,8 @@ setup('테스트 환경 설정', async () => {
     throw error;
   }
 
-  // Prisma 클라이언트 생성
-  const prisma = new PrismaClient({
-    datasources: {
-      db: {
-        url: databaseUrl,
-      },
-    },
-  });
+  // Prisma 클라이언트 생성 (환경 변수 사용)
+  const prisma = new PrismaClient();
 
   try {
     // 테스트용 사용자 생성
