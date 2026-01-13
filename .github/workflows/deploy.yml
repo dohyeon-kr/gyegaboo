@@ -39,6 +39,10 @@ jobs:
           source "$NVM_DIR/nvm.sh"
 
           npm ci
+          
+          # Prisma 클라이언트 생성 (빌드 전에 필요)
+          npx prisma generate
+          
           npm run build
 
       # 🔹 서버 실행 디렉토리로 동기화 (shared 제외)
@@ -50,10 +54,11 @@ jobs:
 
           rsync -a --delete \
             --exclude shared \
+            --exclude .git \
             ./ "$APP_ROOT/"
 
-      # 🔹 Prisma 클라이언트 생성
-      - name: Generate Prisma Client
+      # 🔹 Prisma 클라이언트 생성 및 스키마 동기화
+      - name: Setup Prisma
         run: |
           export NVM_DIR="$HOME/.nvm"
           source "$NVM_DIR/nvm.sh"
@@ -63,10 +68,10 @@ jobs:
 
           export DATABASE_URL="file:$APP_ROOT/shared/data/gyegaboo.db"
 
-          # Prisma 클라이언트 생성 (스키마 변경사항 반영)
+          # Prisma 클라이언트 생성 (배포 디렉토리에서 다시 생성)
           npx prisma generate
 
-          # 기존 데이터베이스가 있으면 스키마 동기화 (db push는 데이터 손실 없이 스키마만 업데이트)
+          # 기존 데이터베이스가 있으면 스키마 동기화
           if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
             echo "Existing database found. Syncing schema..."
             npx prisma db push --accept-data-loss || echo "Schema sync completed or no changes needed"
