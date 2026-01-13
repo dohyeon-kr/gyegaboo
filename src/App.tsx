@@ -5,22 +5,46 @@ import { Statistics } from './components/Statistics';
 import { ExpenseList } from './components/ExpenseList';
 import { ManualEntry } from './components/ManualEntry';
 import { RecurringExpenses } from './components/RecurringExpenses';
+import { InviteMember } from './components/InviteMember';
 import { ThemeToggle } from './components/ThemeToggle';
+import { Login } from './components/Login';
+import { Register } from './components/Register';
 import { useExpenseStore } from './stores/expenseStore';
+import { useAuthStore } from './stores/authStore';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import { Card } from './components/ui/card';
 
-type Tab = 'list' | 'statistics' | 'ai' | 'image' | 'manual' | 'recurring';
+type Tab = 'list' | 'statistics' | 'ai' | 'image' | 'manual' | 'recurring' | 'invite';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('list');
   const { fetchItems, fetchCategories } = useExpenseStore();
+  const { isAuthenticated, isLoading, checkAuth, user } = useAuthStore();
 
   useEffect(() => {
-    // 앱 시작 시 데이터 로드
-    fetchItems();
-    fetchCategories();
-  }, [fetchItems, fetchCategories]);
+    // 인증 상태 확인
+    checkAuth();
+  }, [checkAuth]);
+
+  useEffect(() => {
+    // 인증된 경우에만 데이터 로드
+    if (isAuthenticated) {
+      fetchItems();
+      fetchCategories();
+    }
+  }, [isAuthenticated, fetchItems, fetchCategories]);
+
+  // URL에서 토큰이 있으면 회원가입 페이지 표시
+  const urlParams = new URLSearchParams(window.location.search);
+  const inviteToken = urlParams.get('token');
+  if (inviteToken) {
+    return <Register />;
+  }
+
+  // 로딩 중이거나 인증되지 않은 경우 로그인 페이지 표시
+  if (isLoading || !isAuthenticated || user?.isInitialAdmin) {
+    return <Login />;
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -32,13 +56,14 @@ function App() {
               <ThemeToggle />
             </div>
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="list">목록</TabsTrigger>
                 <TabsTrigger value="statistics">통계</TabsTrigger>
                 <TabsTrigger value="ai">AI 대화</TabsTrigger>
                 <TabsTrigger value="image">이미지</TabsTrigger>
                 <TabsTrigger value="manual">수동 입력</TabsTrigger>
                 <TabsTrigger value="recurring">고정비</TabsTrigger>
+                <TabsTrigger value="invite">초대</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -64,6 +89,9 @@ function App() {
               </TabsContent>
               <TabsContent value="recurring" className="mt-0">
                 <RecurringExpenses />
+              </TabsContent>
+              <TabsContent value="invite" className="mt-0">
+                <InviteMember />
               </TabsContent>
             </Tabs>
           </div>

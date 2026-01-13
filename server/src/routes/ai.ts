@@ -4,7 +4,9 @@ import { generateAIResponse, parseExpenseFromText } from '../utils/aiParser.js';
 
 export async function aiRoutes(fastify: FastifyInstance) {
   // AI를 통한 가계부 읽기
-  fastify.post('/read', async (request, reply) => {
+  fastify.post('/read', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { query } = request.body as { query: string };
     
     if (!query) {
@@ -25,7 +27,9 @@ export async function aiRoutes(fastify: FastifyInstance) {
   });
 
   // AI를 통한 가계부 쓰기
-  fastify.post('/write', async (request, reply) => {
+  fastify.post('/write', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { query } = request.body as { query: string };
     
     if (!query) {
@@ -50,7 +54,9 @@ export async function aiRoutes(fastify: FastifyInstance) {
   });
 
   // AI 챗봇
-  fastify.post('/chat', async (request, reply) => {
+  fastify.post('/chat', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { messages } = request.body as {
       messages: Array<{ role: 'user' | 'assistant'; content: string }>;
     };

@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
 import { mkdirSync, existsSync } from 'fs';
+import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import type { ExpenseItem, Category } from '../../src/types/index.js';
 
 // data 디렉토리 생성
@@ -55,6 +57,30 @@ export function initDatabase() {
     )
   `);
 
+  // users 테이블 생성
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      username TEXT UNIQUE NOT NULL,
+      password_hash TEXT NOT NULL,
+      is_initial_admin INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // invitation_tokens 테이블 생성
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS invitation_tokens (
+      token TEXT PRIMARY KEY,
+      created_by TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      expires_at TEXT NOT NULL,
+      used INTEGER NOT NULL DEFAULT 0,
+      used_at TEXT,
+      FOREIGN KEY (created_by) REFERENCES users(id)
+    )
+  `);
+
   // 기본 카테고리 추가
   const defaultCategories: Category[] = [
     { id: '1', name: '식비', type: 'expense', color: '#FF6B6B' },
@@ -78,6 +104,28 @@ export function initDatabase() {
   });
 
   insertManyCategories(defaultCategories);
+
+  // 초기 admin 계정 생성 (없는 경우)
+  const userCount = db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number };
+  if (userCount.count === 0) {
+    const initialPassword = randomBytes(16).toString('hex');
+    const passwordHash = bcrypt.hashSync(initialPassword, 10);
+    const adminId = 'admin-' + Date.now();
+    
+    db.prepare(`
+      INSERT INTO users (id, username, password_hash, is_initial_admin)
+      VALUES (?, ?, ?, ?)
+    `).run(adminId, 'admin', passwordHash, 1);
+    
+    console.log('\n========================================');
+    console.log('🔐 초기 관리자 계정이 생성되었습니다.');
+    console.log('========================================');
+    console.log('사용자명: admin');
+    console.log(`비밀번호: ${initialPassword}`);
+    console.log('========================================\n');
+    console.log('⚠️  이 비밀번호는 서버 관리자만 확인할 수 있습니다.');
+    console.log('⚠️  새로운 관리자를 등록한 후 초기 계정은 자동으로 삭제됩니다.\n');
+  }
 
   console.log('Database initialized');
 }
@@ -325,6 +373,134 @@ export const recurringExpenseQueries = {
 
   delete: (id: string) => {
     db.prepare('DELETE FROM recurring_expenses WHERE id = ?').run(id);
+  },
+};
+
+// User CRUD
+export const userQueries = {
+  getByUsername: (username: string) => {
+    return db.prepare('SELECT * FROM users WHERE username = ?').get(username) as {
+      id: string;
+      username: string;
+      password_hash: string;
+      is_initial_admin: number;
+      created_at: string;
+    } | undefined;
+  },
+
+  getById: (id: string) => {
+    return db.prepare('SELECT * FROM users WHERE id = ?').get(id) as {
+      id: string;
+      username: string;
+      password_hash: string;
+      is_initial_admin: number;
+      created_at: string;
+    } | undefined;
+  },
+
+  create: (username: string, passwordHash: string) => {
+    const id = 'user-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+    db.prepare(`
+      INSERT INTO users (id, username, password_hash, is_initial_admin)
+      VALUES (?, ?, ?, ?)
+    `).run(id, username, passwordHash, 0);
+    return userQueries.getById(id)!;
+  },
+
+  getAll: () => {
+    return db.prepare('SELECT id, username, is_initial_admin, created_at FROM users ORDER BY created_at DESC').all() as Array<{
+      id: string;
+      username: string;
+      is_initial_admin: number;
+      created_at: string;
+    }>;
+  },
+
+  deleteInitialAdmin: () => {
+    db.prepare('DELETE FROM users WHERE is_initial_admin = 1').run();
+  },
+
+  count: () => {
+    return (db.prepare('SELECT COUNT(*) as count FROM users').get() as { count: number }).count;
+  },
+};
+
+// Invitation Token CRUD
+export const invitationTokenQueries = {
+  create: (token: string, createdBy: string, expiresAt: string) => {
+    db.prepare(`
+      INSERT INTO invitation_tokens (token, created_by, expires_at)
+      VALUES (?, ?, ?)
+    `).run(token, createdBy, expiresAt);
+    return invitationTokenQueries.getByToken(token);
+  },
+
+  getByToken: (token: string) => {
+    return db.prepare('SELECT * FROM invitation_tokens WHERE token = ?').get(token) as {
+      token: string;
+      created_by: string;
+      created_at: string;
+      expires_at: string;
+      used: number;
+      used_at: string | null;
+    } | undefined;
+  },
+
+  markAsUsed: (token: string) => {
+    db.prepare(`
+      UPDATE invitation_tokens 
+      SET used = 1, used_at = datetime('now')
+      WHERE token = ?
+    `).run(token);
+  },
+
+  isValid: (token: string): boolean => {
+    const tokenData = invitationTokenQueries.getByToken(token);
+    if (!tokenData) {
+      return false;
+    }
+
+    // 이미 사용된 토큰인지 확인
+    if (tokenData.used === 1) {
+      return false;
+    }
+
+    // 만료 시간 확인
+    const now = new Date().toISOString();
+    if (tokenData.expires_at < now) {
+      return false;
+    }
+
+    return true;
+  },
+
+  getAll: (createdBy?: string) => {
+    if (createdBy) {
+      return db.prepare(`
+        SELECT token, created_at, expires_at, used, used_at 
+        FROM invitation_tokens 
+        WHERE created_by = ?
+        ORDER BY created_at DESC
+      `).all(createdBy) as Array<{
+        token: string;
+        created_at: string;
+        expires_at: string;
+        used: number;
+        used_at: string | null;
+      }>;
+    }
+    return db.prepare(`
+      SELECT token, created_by, created_at, expires_at, used, used_at 
+      FROM invitation_tokens 
+      ORDER BY created_at DESC
+    `).all() as Array<{
+      token: string;
+      created_by: string;
+      created_at: string;
+      expires_at: string;
+      used: number;
+      used_at: string | null;
+    }>;
   },
 };
 

@@ -1,4 +1,5 @@
 import type { ImageUploadResponse } from '../types';
+import { getAuthHeaders, authenticatedFetch } from '../utils/apiClient';
 
 // 이미지 업로드 및 OCR 서비스
 const IMAGE_API_URL = import.meta.env.VITE_IMAGE_API_URL || 'http://localhost:3001/api/image';
@@ -14,8 +15,13 @@ export class ImageService {
       const formData = new FormData();
       formData.append('image', file);
 
+      const headers = getAuthHeaders();
+      // FormData를 사용할 때는 Content-Type을 설정하지 않음
+      delete headers['Content-Type'];
+
       const response = await fetch(`${IMAGE_API_URL}/upload`, {
         method: 'POST',
+        headers,
         body: formData,
       });
 
@@ -44,11 +50,8 @@ export class ImageService {
    */
   static async extractFromUrl(imageUrl: string): Promise<ImageUploadResponse> {
     try {
-      const response = await fetch(`${IMAGE_API_URL}/extract`, {
+      const response = await authenticatedFetch(`${IMAGE_API_URL}/extract`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ imageUrl }),
       });
 

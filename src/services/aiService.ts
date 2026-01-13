@@ -1,4 +1,5 @@
 import type { AIResponse } from '../types';
+import { authenticatedFetch } from '../utils/apiClient';
 
 // AI API 서비스
 // 실제 구현 시 환경 변수로 API 키를 관리해야 합니다
@@ -12,11 +13,8 @@ export class AIService {
    */
   static async readExpenses(query: string): Promise<AIResponse> {
     try {
-      const response = await fetch(`${AI_API_URL}/read`, {
+      const response = await authenticatedFetch(`${AI_API_URL}/read`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ query }),
       });
 
@@ -45,11 +43,8 @@ export class AIService {
    */
   static async writeExpense(query: string): Promise<AIResponse> {
     try {
-      const response = await fetch(`${AI_API_URL}/write`, {
+      const response = await authenticatedFetch(`${AI_API_URL}/write`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ query }),
       });
 
@@ -78,11 +73,8 @@ export class AIService {
    */
   static async chat(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<AIResponse> {
     try {
-      const response = await fetch(`${AI_API_URL}/chat`, {
+      const response = await authenticatedFetch(`${AI_API_URL}/chat`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({ messages }),
       });
 

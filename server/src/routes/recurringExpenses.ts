@@ -6,7 +6,9 @@ import type { RecurringExpense } from '../../../src/types/index.js';
 
 export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   // 모든 고정비 조회
-  fastify.get('/', async () => {
+  fastify.get('/', {
+    preHandler: [fastify.authenticate],
+  }, async () => {
     const items = recurringExpenseQueries.getAll();
     return items.map((item) => ({
       id: item.id,
@@ -25,7 +27,9 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   });
 
   // 활성 고정비만 조회
-  fastify.get('/active', async () => {
+  fastify.get('/active', {
+    preHandler: [fastify.authenticate],
+  }, async () => {
     const items = recurringExpenseQueries.getActive();
     return items.map((item) => ({
       id: item.id,
@@ -44,7 +48,9 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   });
 
   // 고정비 ID로 조회
-  fastify.get('/:id', async (request, reply) => {
+  fastify.get('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const item = recurringExpenseQueries.getById(id);
 
@@ -69,7 +75,9 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   });
 
   // 고정비 생성
-  fastify.post('/', async (request, reply) => {
+  fastify.post('/', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const data = request.body as RecurringExpense;
 
     if (
@@ -101,7 +109,9 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   });
 
   // 고정비 수정
-  fastify.put('/:id', async (request, reply) => {
+  fastify.put('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const updates = request.body as Partial<RecurringExpense>;
 
@@ -140,14 +150,18 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   });
 
   // 고정비 삭제
-  fastify.delete('/:id', async (request, reply) => {
+  fastify.delete('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     recurringExpenseQueries.delete(id);
     return { success: true };
   });
 
   // 고정비 처리 (수동 실행)
-  fastify.post('/process', async (request) => {
+  fastify.post('/process', {
+    preHandler: [fastify.authenticate],
+  }, async (request) => {
     const { targetDate } = request.body as { targetDate?: string };
     const items = processRecurringExpenses(targetDate);
     return {
@@ -158,7 +172,9 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
   });
 
   // 특정 고정비 처리
-  fastify.post('/:id/process', async (request, reply) => {
+  fastify.post('/:id/process', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const { targetDate } = request.body as { targetDate?: string };
     const item = processRecurringExpenseById(id, targetDate);

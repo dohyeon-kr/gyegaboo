@@ -6,7 +6,9 @@ import {
 
 export async function imageRoutes(fastify: FastifyInstance) {
   // 이미지 업로드 및 추출
-  fastify.post('/upload', async (request, reply) => {
+  fastify.post('/upload', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const data = await request.file();
     
     if (!data) {
@@ -23,7 +25,9 @@ export async function imageRoutes(fastify: FastifyInstance) {
   });
 
   // 이미지 URL에서 추출
-  fastify.post('/extract', async (request, reply) => {
+  fastify.post('/extract', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { imageUrl } = request.body as { imageUrl: string };
     
     if (!imageUrl) {

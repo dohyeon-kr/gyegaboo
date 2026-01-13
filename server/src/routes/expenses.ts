@@ -4,12 +4,16 @@ import type { ExpenseItem, Category } from '../../../src/types/index.js';
 
 export async function expenseRoutes(fastify: FastifyInstance) {
   // 모든 항목 조회
-  fastify.get('/', async () => {
+  fastify.get('/', {
+    preHandler: [fastify.authenticate],
+  }, async () => {
     return expenseQueries.getAll();
   });
 
   // 항목 ID로 조회
-  fastify.get('/:id', async (request, reply) => {
+  fastify.get('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const item = expenseQueries.getById(id);
     
@@ -21,7 +25,9 @@ export async function expenseRoutes(fastify: FastifyInstance) {
   });
 
   // 항목 생성
-  fastify.post('/', async (request, reply) => {
+  fastify.post('/', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const item = request.body as ExpenseItem;
     
     if (!item.id || !item.date || !item.amount || !item.category || !item.description || !item.type) {
@@ -33,7 +39,9 @@ export async function expenseRoutes(fastify: FastifyInstance) {
   });
 
   // 여러 항목 생성
-  fastify.post('/batch', async (request, reply) => {
+  fastify.post('/batch', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const items = request.body as ExpenseItem[];
     
     if (!Array.isArray(items)) {
@@ -45,7 +53,9 @@ export async function expenseRoutes(fastify: FastifyInstance) {
   });
 
   // 항목 수정
-  fastify.put('/:id', async (request, reply) => {
+  fastify.put('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const updates = request.body as Partial<ExpenseItem>;
     
@@ -59,19 +69,25 @@ export async function expenseRoutes(fastify: FastifyInstance) {
   });
 
   // 항목 삭제
-  fastify.delete('/:id', async (request, reply) => {
+  fastify.delete('/:id', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const { id } = request.params as { id: string };
     expenseQueries.delete(id);
     return { success: true };
   });
 
   // 카테고리 조회
-  fastify.get('/categories', async () => {
+  fastify.get('/categories', {
+    preHandler: [fastify.authenticate],
+  }, async () => {
     return categoryQueries.getAll();
   });
 
   // 카테고리 생성
-  fastify.post('/categories', async (request, reply) => {
+  fastify.post('/categories', {
+    preHandler: [fastify.authenticate],
+  }, async (request, reply) => {
     const category = request.body as Category;
     
     if (!category.id || !category.name || !category.type || !category.color) {
