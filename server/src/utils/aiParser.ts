@@ -270,6 +270,32 @@ function generateAIResponseFallback(
     };
   }
 
+  // 고정비 키워드 확인
+  const recurringKeywords = [
+    '고정비',
+    '매월',
+    '매주',
+    '매일',
+    '매년',
+    '반복',
+    '정기',
+    '구독',
+    '월세',
+    '관리비',
+  ];
+
+  const isRecurringRequest = recurringKeywords.some((keyword) => userText.includes(keyword));
+
+  if (isRecurringRequest) {
+    const recurringExpense = parseRecurringExpenseFromTextFallback(lastMessage.content);
+    if (recurringExpense) {
+      return {
+        recurringExpense,
+        message: `고정비 "${recurringExpense.name}"가 추가되었습니다.`,
+      };
+    }
+  }
+
   if (userText.includes('지출') || userText.includes('수입') || userText.includes('추가')) {
     const items = parseExpenseFromTextFallback(lastMessage.content);
     if (items.length > 0) {
@@ -282,6 +308,6 @@ function generateAIResponseFallback(
   }
 
   return {
-    message: '가계부를 관리하는 데 도움이 필요하시면 언제든지 말씀해주세요. 예: "오늘 커피 5000원 지출"',
+    message: '가계부를 관리하는 데 도움이 필요하시면 언제든지 말씀해주세요. 예: "오늘 커피 5000원 지출" 또는 "매월 관리비 10만원 고정비 추가"',
   };
 }
