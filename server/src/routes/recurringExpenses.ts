@@ -23,6 +23,8 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       endDate: item.end_date,
       lastProcessedDate: item.last_processed_date,
       isActive: item.is_active === 1,
+      createdBy: item.created_by,
+      createdByUsername: item.createdByUsername,
     }));
   });
 
@@ -44,6 +46,8 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       endDate: item.end_date,
       lastProcessedDate: item.last_processed_date,
       isActive: item.is_active === 1,
+      createdBy: item.created_by,
+      createdByUsername: item.createdByUsername,
     }));
   });
 
@@ -71,6 +75,8 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       endDate: item.end_date,
       lastProcessedDate: item.last_processed_date,
       isActive: item.is_active === 1,
+      createdBy: item.created_by,
+      createdByUsername: item.createdByUsername,
     };
   });
 
@@ -79,6 +85,7 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const data = request.body as RecurringExpense;
+    const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
 
     if (
       !data.name ||
@@ -104,8 +111,23 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       isActive: data.isActive !== false,
     };
 
-    recurringExpenseQueries.create(item);
-    return item;
+    const created = recurringExpenseQueries.create(item, user.id);
+    return {
+      id: created.id,
+      name: created.name,
+      amount: created.amount,
+      category: created.category,
+      description: created.description,
+      type: created.type,
+      repeatType: created.repeat_type,
+      repeatDay: created.repeat_day,
+      startDate: created.start_date,
+      endDate: created.end_date,
+      lastProcessedDate: created.last_processed_date,
+      isActive: created.is_active === 1,
+      createdBy: created.created_by,
+      createdByUsername: created.createdByUsername,
+    };
   });
 
   // 고정비 수정
@@ -146,6 +168,8 @@ export async function recurringExpenseRoutes(fastify: FastifyInstance) {
       endDate: updated.end_date,
       lastProcessedDate: updated.last_processed_date,
       isActive: updated.is_active === 1,
+      createdBy: updated.created_by,
+      createdByUsername: updated.createdByUsername,
     };
   });
 

@@ -471,6 +471,9 @@ export function RecurringExpenses() {
                           <span className="px-2 py-1 text-xs font-medium rounded-md bg-secondary">
                             {item.category}
                           </span>
+                          <span className="px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary">
+                            작성자: {item.createdByUsername || '시스템'}
+                          </span>
                           {!item.isActive && (
                             <span className="px-2 py-1 text-xs font-medium rounded-md bg-muted text-muted-foreground">
                               비활성

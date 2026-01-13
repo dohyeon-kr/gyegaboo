@@ -25,9 +25,22 @@ export function initDatabase() {
       category TEXT NOT NULL,
       description TEXT NOT NULL,
       type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
-      imageUrl TEXT
+      imageUrl TEXT,
+      created_by TEXT,
+      FOREIGN KEY (created_by) REFERENCES users(id)
     )
   `);
+
+  // 기존 테이블에 created_by 컬럼 추가 (마이그레이션)
+  try {
+    db.exec(`ALTER TABLE expenses ADD COLUMN created_by TEXT`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_expenses_created_by ON expenses(created_by)`);
+  } catch (error: any) {
+    // 컬럼이 이미 존재하는 경우 무시
+    if (!error.message.includes('duplicate column name')) {
+      console.warn('Failed to add created_by column to expenses:', error.message);
+    }
+  }
 
   // categories 테이블 생성
   db.exec(`
@@ -53,9 +66,22 @@ export function initDatabase() {
       start_date TEXT NOT NULL,
       end_date TEXT,
       last_processed_date TEXT,
-      is_active INTEGER NOT NULL DEFAULT 1
+      is_active INTEGER NOT NULL DEFAULT 1,
+      created_by TEXT,
+      FOREIGN KEY (created_by) REFERENCES users(id)
     )
   `);
+
+  // 기존 테이블에 created_by 컬럼 추가 (마이그레이션)
+  try {
+    db.exec(`ALTER TABLE recurring_expenses ADD COLUMN created_by TEXT`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_recurring_expenses_created_by ON recurring_expenses(created_by)`);
+  } catch (error: any) {
+    // 컬럼이 이미 존재하는 경우 무시
+    if (!error.message.includes('duplicate column name')) {
+      console.warn('Failed to add created_by column to recurring_expenses:', error.message);
+    }
+  }
 
   // users 테이블 생성
   db.exec(`
@@ -133,17 +159,31 @@ export function initDatabase() {
 // ExpenseItem CRUD
 export const expenseQueries = {
   getAll: () => {
-    return db.prepare('SELECT * FROM expenses ORDER BY date DESC').all() as ExpenseItem[];
+    return db.prepare(`
+      SELECT 
+        e.*,
+        u.username as createdByUsername
+      FROM expenses e
+      LEFT JOIN users u ON e.created_by = u.id
+      ORDER BY e.date DESC
+    `).all() as Array<ExpenseItem & { createdByUsername?: string }>;
   },
 
   getById: (id: string) => {
-    return db.prepare('SELECT * FROM expenses WHERE id = ?').get(id) as ExpenseItem | undefined;
+    return db.prepare(`
+      SELECT 
+        e.*,
+        u.username as createdByUsername
+      FROM expenses e
+      LEFT JOIN users u ON e.created_by = u.id
+      WHERE e.id = ?
+    `).get(id) as (ExpenseItem & { createdByUsername?: string }) | undefined;
   },
 
-  create: (item: ExpenseItem) => {
+  create: (item: ExpenseItem, createdBy?: string) => {
     db.prepare(`
-      INSERT INTO expenses (id, date, amount, category, description, type, imageUrl)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO expenses (id, date, amount, category, description, type, imageUrl, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       item.id,
       item.date,
@@ -151,15 +191,16 @@ export const expenseQueries = {
       item.category,
       item.description,
       item.type,
-      item.imageUrl || null
+      item.imageUrl || null,
+      createdBy || null
     );
-    return item;
+    return expenseQueries.getById(item.id)!;
   },
 
-  createMany: (items: ExpenseItem[]) => {
+  createMany: (items: ExpenseItem[], createdBy?: string) => {
     const insert = db.prepare(`
-      INSERT OR IGNORE INTO expenses (id, date, amount, category, description, type, imageUrl)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT OR IGNORE INTO expenses (id, date, amount, category, description, type, imageUrl, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     const insertMany = db.transaction((items: ExpenseItem[]) => {
       for (const item of items) {
@@ -171,7 +212,8 @@ export const expenseQueries = {
             item.category,
             item.description,
             item.type,
-            item.imageUrl || null
+            item.imageUrl || null,
+            createdBy || null
           );
         } catch (error: any) {
           // 중복 ID인 경우 무시하고 계속 진행
@@ -182,7 +224,8 @@ export const expenseQueries = {
       }
     });
     insertMany(items);
-    return items;
+    // 생성된 항목들을 다시 조회하여 작성자 정보 포함
+    return expenseQueries.getAll().filter(e => items.some(i => i.id === e.id));
   },
 
   update: (id: string, updates: Partial<ExpenseItem>) => {
@@ -244,7 +287,14 @@ export const categoryQueries = {
 // RecurringExpense CRUD
 export const recurringExpenseQueries = {
   getAll: () => {
-    return db.prepare('SELECT * FROM recurring_expenses ORDER BY start_date DESC').all() as Array<{
+    return db.prepare(`
+      SELECT 
+        r.*,
+        u.username as createdByUsername
+      FROM recurring_expenses r
+      LEFT JOIN users u ON r.created_by = u.id
+      ORDER BY r.start_date DESC
+    `).all() as Array<{
       id: string;
       name: string;
       amount: number;
@@ -257,15 +307,31 @@ export const recurringExpenseQueries = {
       end_date: string | null;
       last_processed_date: string | null;
       is_active: number;
+      created_by: string | null;
+      createdByUsername?: string;
     }>;
   },
 
   getById: (id: string) => {
-    return db.prepare('SELECT * FROM recurring_expenses WHERE id = ?').get(id) as any;
+    return db.prepare(`
+      SELECT 
+        r.*,
+        u.username as createdByUsername
+      FROM recurring_expenses r
+      LEFT JOIN users u ON r.created_by = u.id
+      WHERE r.id = ?
+    `).get(id) as any;
   },
 
   getActive: () => {
-    return db.prepare('SELECT * FROM recurring_expenses WHERE is_active = 1').all() as any[];
+    return db.prepare(`
+      SELECT 
+        r.*,
+        u.username as createdByUsername
+      FROM recurring_expenses r
+      LEFT JOIN users u ON r.created_by = u.id
+      WHERE r.is_active = 1
+    `).all() as any[];
   },
 
   create: (item: {
@@ -280,13 +346,13 @@ export const recurringExpenseQueries = {
     startDate: string;
     endDate?: string;
     isActive: boolean;
-  }) => {
+  }, createdBy?: string) => {
     db.prepare(`
       INSERT INTO recurring_expenses (
         id, name, amount, category, description, type,
-        repeat_type, repeat_day, start_date, end_date, is_active
+        repeat_type, repeat_day, start_date, end_date, is_active, created_by
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       item.id,
       item.name,
@@ -298,9 +364,10 @@ export const recurringExpenseQueries = {
       item.repeatDay || null,
       item.startDate,
       item.endDate || null,
-      item.isActive ? 1 : 0
+      item.isActive ? 1 : 0,
+      createdBy || null
     );
-    return item;
+    return recurringExpenseQueries.getById(item.id);
   },
 
   update: (id: string, updates: Partial<{

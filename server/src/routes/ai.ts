@@ -31,6 +31,7 @@ export async function aiRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const { query } = request.body as { query: string };
+    const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
     
     if (!query) {
       return reply.code(400).send({ error: 'query is required' });
@@ -45,11 +46,11 @@ export async function aiRoutes(fastify: FastifyInstance) {
       });
     }
 
-    expenseQueries.createMany(items);
+    const created = expenseQueries.createMany(items, user.id);
 
     return {
       success: true,
-      items,
+      items: created,
     };
   });
 
@@ -68,19 +69,34 @@ export async function aiRoutes(fastify: FastifyInstance) {
     const expenses = expenseQueries.getAll();
     const response = await generateAIResponse(messages, expenses);
 
+    const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
+
     if (response.recurringExpense) {
       // 고정비 생성
-      recurringExpenseQueries.create(response.recurringExpense);
+      const created = recurringExpenseQueries.create(response.recurringExpense, user.id);
       return {
         success: true,
-        recurringExpense: response.recurringExpense,
+        recurringExpense: {
+          ...response.recurringExpense,
+          createdBy: created.created_by,
+          createdByUsername: created.createdByUsername,
+        },
+        message: response.message,
+      };
+    }
+
+    if (response.items && response.items.length > 0) {
+      const created = expenseQueries.createMany(response.items, user.id);
+      return {
+        success: true,
+        items: created,
         message: response.message,
       };
     }
 
     return {
       success: true,
-      items: response.items || [],
+      items: [],
       message: response.message,
     };
   });

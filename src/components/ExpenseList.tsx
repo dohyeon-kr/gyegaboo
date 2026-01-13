@@ -117,6 +117,9 @@ export function ExpenseList() {
                           <span className="px-2 py-1 text-xs font-medium rounded-md bg-secondary">
                             {item.category}
                           </span>
+                          <span className="px-2 py-1 text-xs font-medium rounded-md bg-primary/10 text-primary">
+                            작성자: {item.createdByUsername || '시스템'}
+                          </span>
                         </div>
                         <p className="text-sm font-medium">{item.description}</p>
                         {item.imageUrl && (

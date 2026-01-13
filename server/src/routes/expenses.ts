@@ -29,13 +29,14 @@ export async function expenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const item = request.body as ExpenseItem;
+    const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
     
     if (!item.id || !item.date || !item.amount || !item.category || !item.description || !item.type) {
       return reply.code(400).send({ error: 'Invalid item data' });
     }
 
-    expenseQueries.create(item);
-    return item;
+    const created = expenseQueries.create(item, user.id);
+    return created;
   });
 
   // 여러 항목 생성
@@ -43,13 +44,14 @@ export async function expenseRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     const items = request.body as ExpenseItem[];
+    const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
     
     if (!Array.isArray(items)) {
       return reply.code(400).send({ error: 'Items must be an array' });
     }
 
-    expenseQueries.createMany(items);
-    return items;
+    const created = expenseQueries.createMany(items, user.id);
+    return created;
   });
 
   // 항목 수정

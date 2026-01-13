@@ -7,6 +7,8 @@ export interface ExpenseItem {
   description: string;
   type: 'income' | 'expense'; // 수입 또는 지출
   imageUrl?: string; // 이미지가 있는 경우
+  createdBy?: string; // 작성자 ID
+  createdByUsername?: string; // 작성자 사용자명
 }
 
 // 항목 분류 카테고리
@@ -67,4 +69,6 @@ export interface RecurringExpense {
   endDate?: string; // 만료일 (선택사항)
   lastProcessedDate?: string; // 마지막 처리일
   isActive: boolean; // 활성화 여부
+  createdBy?: string; // 작성자 ID
+  createdByUsername?: string; // 작성자 사용자명
 }
