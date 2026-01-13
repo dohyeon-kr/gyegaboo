@@ -15,8 +15,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from './ui/alert-dialog';
-import { Trash2, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Edit } from 'lucide-react';
 import { useToast } from './ui/use-toast';
+import { EditExpenseDialog } from './EditExpenseDialog';
 
 export function ExpenseList() {
   const { items, removeItem } = useExpenseStore();
@@ -24,6 +25,8 @@ export function ExpenseList() {
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<ExpenseItem | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [itemToEdit, setItemToEdit] = useState<ExpenseItem | null>(null);
   const { toast } = useToast();
 
   const filteredAndSortedItems = useMemo(() => {
@@ -45,6 +48,11 @@ export function ExpenseList() {
   const handleDeleteClick = (item: ExpenseItem) => {
     setItemToDelete(item);
     setDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (item: ExpenseItem) => {
+    setItemToEdit(item);
+    setEditDialogOpen(true);
   };
 
   const handleDeleteConfirm = async () => {
@@ -155,15 +163,28 @@ export function ExpenseList() {
                             </span>
                           </div>
                         </div>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteClick(item)}
-                          className="text-destructive hover:text-destructive shrink-0"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditClick(item)}
+                            className="text-primary hover:text-primary"
+                            title="수정"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(item)}
+                            className="text-destructive hover:text-destructive"
+                            title="삭제"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardContent>
@@ -210,6 +231,12 @@ export function ExpenseList() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditExpenseDialog
+        item={itemToEdit}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
     </div>
   );
 }
