@@ -14,7 +14,11 @@
         "preview": "vite preview",
         "server": "tsx server/src/index.ts",
         "server:dev": "tsx watch server/src/index.ts",
-        "semantic-release": "semantic-release"
+        "semantic-release": "semantic-release",
+        "test:e2e": "playwright test",
+        "test:e2e:ui": "playwright test --ui",
+        "test:e2e:headed": "playwright test --headed",
+        "test:e2e:debug": "playwright test --debug"
     },
     "dependencies": {
         "@fastify/cors": "^11.2.0",
@@ -54,12 +58,13 @@
     },
     "devDependencies": {
         "@eslint/js": "^9.39.1",
+        "@playwright/test": "^1.57.0",
         "@semantic-release/commit-analyzer": "^13.0.1",
         "@semantic-release/exec": "^7.1.0",
         "@semantic-release/github": "^11.0.6",
         "@semantic-release/release-notes-generator": "^14.1.0",
         "@types/better-sqlite3": "^7.6.13",
-        "@types/node": "^24.10.1",
+        "@types/node": "^24.10.8",
         "@types/react": "^19.2.5",
         "@types/react-dom": "^19.2.3",
         "@vitejs/plugin-react": "^5.1.1",

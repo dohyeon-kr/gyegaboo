@@ -1,0 +1,154 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('가계부 항목 관리', () => {
+  test.beforeEach(async ({ page }) => {
+    await AuthHelper.login(page);
+  });
+
+  test('수동 입력으로 지출 항목 추가', async ({ page }) => {
+    // 수동 입력 페이지로 이동
+    await page.goto('/manual');
+    
+    // 폼 작성
+    await page.getByLabel(/날짜/i).fill('2024-01-15');
+    await page.getByLabel(/유형/i).selectOption('expense');
+    await page.getByLabel(/금액/i).fill('5000');
+    await page.getByLabel(/카테고리/i).selectOption('식비');
+    await page.getByLabel(/설명/i).fill('점심 식사');
+    
+    // 저장 버튼 클릭
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    // 성공 메시지 확인
+    await expect(page.getByText(/추가 완료/i)).toBeVisible();
+    
+    // 목록 페이지로 이동하여 항목 확인
+    await page.goto('/');
+    await expect(page.getByText(/점심 식사/i)).toBeVisible();
+    await expect(page.getByText(/5,000원/i)).toBeVisible();
+  });
+
+  test('수입 항목 추가', async ({ page }) => {
+    await page.goto('/manual');
+    
+    await page.getByLabel(/유형/i).selectOption('income');
+    await page.getByLabel(/금액/i).fill('100000');
+    await page.getByLabel(/카테고리/i).selectOption('급여');
+    await page.getByLabel(/설명/i).fill('월급');
+    
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    await expect(page.getByText(/추가 완료/i)).toBeVisible();
+    
+    // 목록에서 확인
+    await page.goto('/');
+    await expect(page.getByText(/월급/i)).toBeVisible();
+    await expect(page.getByText(/100,000원/i)).toBeVisible();
+  });
+
+  test('항목 수정', async ({ page }) => {
+    // 먼저 항목 추가
+    await page.goto('/manual');
+    await page.getByLabel(/유형/i).selectOption('expense');
+    await page.getByLabel(/금액/i).fill('5000');
+    await page.getByLabel(/카테고리/i).selectOption('식비');
+    await page.getByLabel(/설명/i).fill('커피');
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    // 목록 페이지로 이동
+    await page.goto('/');
+    
+    // 수정 버튼 클릭
+    await page.getByText(/커피/i).locator('..').getByRole('button', { name: /수정/i }).click();
+    
+    // 수정 다이얼로그에서 금액 변경
+    await page.getByLabel(/금액/i).fill('6000');
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    // 수정된 내용 확인
+    await expect(page.getByText(/6,000원/i)).toBeVisible();
+  });
+
+  test('항목 삭제', async ({ page }) => {
+    // 항목 추가
+    await page.goto('/manual');
+    await page.getByLabel(/유형/i).selectOption('expense');
+    await page.getByLabel(/금액/i).fill('3000');
+    await page.getByLabel(/카테고리/i).selectOption('교통비');
+    await page.getByLabel(/설명/i).fill('지하철');
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    // 목록 페이지로 이동
+    await page.goto('/');
+    
+    // 삭제 버튼 클릭
+    await page.getByText(/지하철/i).locator('..').getByRole('button', { name: /삭제/i }).click();
+    
+    // 삭제 확인 다이얼로그에서 확인
+    await page.getByRole('button', { name: /확인/i }).click();
+    
+    // 삭제 완료 메시지 확인
+    await expect(page.getByText(/삭제 완료/i)).toBeVisible();
+    
+    // 목록에서 항목이 사라졌는지 확인
+    await expect(page.getByText(/지하철/i)).not.toBeVisible();
+  });
+
+  test('항목 필터링 (지출/수입)', async ({ page }) => {
+    // 지출 항목 추가
+    await page.goto('/manual');
+    await page.getByLabel(/유형/i).selectOption('expense');
+    await page.getByLabel(/금액/i).fill('5000');
+    await page.getByLabel(/카테고리/i).selectOption('식비');
+    await page.getByLabel(/설명/i).fill('지출 항목');
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    // 수입 항목 추가
+    await page.getByLabel(/유형/i).selectOption('income');
+    await page.getByLabel(/금액/i).fill('100000');
+    await page.getByLabel(/카테고리/i).selectOption('급여');
+    await page.getByLabel(/설명/i).fill('수입 항목');
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    // 목록 페이지로 이동
+    await page.goto('/');
+    
+    // 지출 필터 선택
+    await page.getByLabel(/필터/i).selectOption('expense');
+    
+    // 지출 항목만 표시되는지 확인
+    await expect(page.getByText(/지출 항목/i)).toBeVisible();
+    await expect(page.getByText(/수입 항목/i)).not.toBeVisible();
+    
+    // 수입 필터 선택
+    await page.getByLabel(/필터/i).selectOption('income');
+    
+    // 수입 항목만 표시되는지 확인
+    await expect(page.getByText(/수입 항목/i)).toBeVisible();
+    await expect(page.getByText(/지출 항목/i)).not.toBeVisible();
+  });
+
+  test('항목 검색', async ({ page }) => {
+    // 항목 추가
+    await page.goto('/manual');
+    await page.getByLabel(/유형/i).selectOption('expense');
+    await page.getByLabel(/금액/i).fill('5000');
+    await page.getByLabel(/카테고리/i).selectOption('식비');
+    await page.getByLabel(/설명/i).fill('커피');
+    await page.getByRole('button', { name: /저장/i }).click();
+    
+    await page.goto('/');
+    
+    // 검색어 입력
+    await page.getByPlaceholder(/검색/i).fill('커피');
+    
+    // 검색 결과 확인
+    await expect(page.getByText(/커피/i)).toBeVisible();
+    
+    // 다른 검색어로 검색
+    await page.getByPlaceholder(/검색/i).fill('없는 항목');
+    
+    // 검색 결과 없음 확인
+    await expect(page.getByText(/커피/i)).not.toBeVisible();
+  });
+});
