@@ -3,7 +3,7 @@ import { authenticatedFetch } from '../utils/apiClient';
 import { authService } from './authService';
 
 // 이미지 업로드 및 OCR 서비스
-const IMAGE_API_URL = import.meta.env.VITE_IMAGE_API_URL || 'http://localhost:3001/api/image';
+const IMAGE_API_URL = import.meta.env.VITE_IMAGE_API_URL || '/api/image';
 
 export class ImageService {
   /**

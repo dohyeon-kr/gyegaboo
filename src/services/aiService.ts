@@ -3,7 +3,7 @@ import { authenticatedFetch } from '../utils/apiClient';
 
 // AI API 서비스
 // 실제 구현 시 환경 변수로 API 키를 관리해야 합니다
-const AI_API_URL = import.meta.env.VITE_AI_API_URL || 'http://localhost:3001/api/ai';
+const AI_API_URL = import.meta.env.VITE_AI_API_URL || '/api/ai';
 
 export class AIService {
   /**
