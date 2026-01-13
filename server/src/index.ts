@@ -42,6 +42,9 @@ async function start() {
   // CORS 설정
   await fastify.register(cors, {
     origin: true, // 모든 origin 허용 (개발용)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // 허용할 HTTP 메서드
+    allowedHeaders: ['Content-Type', 'Authorization'], // 허용할 헤더
+    credentials: true, // 쿠키 및 인증 정보 허용
   });
 
   // Multipart 설정 (파일 업로드용)
