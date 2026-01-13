@@ -1,9 +1,5 @@
 import type { AIResponse } from '../types';
-import { authenticatedFetch } from '../utils/apiClient';
-
-// AI API 서비스
-// 실제 구현 시 환경 변수로 API 키를 관리해야 합니다
-const AI_API_URL = import.meta.env.VITE_AI_API_URL || '/api/ai';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
 
 export class AIService {
   /**
@@ -13,16 +9,7 @@ export class AIService {
    */
   static async readExpenses(query: string): Promise<AIResponse> {
     try {
-      const response = await authenticatedFetch(`${AI_API_URL}/read`, {
-        method: 'POST',
-        body: JSON.stringify({ query }),
-      });
-
-      if (!response.ok) {
-        throw new Error('AI API 요청 실패');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.post<{ items?: any[] }>('/ai/read', { query });
       return {
         success: true,
         data: data.items || [],
@@ -31,7 +18,7 @@ export class AIService {
       console.error('AI 읽기 오류:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        message: getErrorMessage(error) || '알 수 없는 오류',
       };
     }
   }
@@ -43,16 +30,7 @@ export class AIService {
    */
   static async writeExpense(query: string): Promise<AIResponse> {
     try {
-      const response = await authenticatedFetch(`${AI_API_URL}/write`, {
-        method: 'POST',
-        body: JSON.stringify({ query }),
-      });
-
-      if (!response.ok) {
-        throw new Error('AI API 요청 실패');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.post<{ items?: any[] }>('/ai/write', { query });
       return {
         success: true,
         data: data.items || [],
@@ -61,7 +39,7 @@ export class AIService {
       console.error('AI 쓰기 오류:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        message: getErrorMessage(error) || '알 수 없는 오류',
       };
     }
   }
@@ -73,16 +51,11 @@ export class AIService {
    */
   static async chat(messages: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<AIResponse> {
     try {
-      const response = await authenticatedFetch(`${AI_API_URL}/chat`, {
-        method: 'POST',
-        body: JSON.stringify({ messages }),
-      });
-
-      if (!response.ok) {
-        throw new Error('AI API 요청 실패');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.post<{
+        items?: any[];
+        recurringExpense?: any;
+        message?: string;
+      }>('/ai/chat', { messages });
       return {
         success: true,
         data: data.items || [],
@@ -93,7 +66,7 @@ export class AIService {
       console.error('AI 채팅 오류:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        message: getErrorMessage(error) || '알 수 없는 오류',
       };
     }
   }

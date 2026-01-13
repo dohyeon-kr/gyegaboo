@@ -1,9 +1,5 @@
 import type { ImageUploadResponse } from '../types';
-import { authenticatedFetch } from '../utils/apiClient';
-import { authService } from './authService';
-
-// 이미지 업로드 및 OCR 서비스
-const IMAGE_API_URL = import.meta.env.VITE_IMAGE_API_URL || '/api/image';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
 
 export class ImageService {
   /**
@@ -16,26 +12,12 @@ export class ImageService {
       const formData = new FormData();
       formData.append('image', file);
 
-      const token = authService.getToken();
-      const headers: HeadersInit = {};
-      
-      // FormData를 사용할 때는 Content-Type을 설정하지 않음 (브라우저가 자동 설정)
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${IMAGE_API_URL}/upload`, {
-        method: 'POST',
-        headers,
-        body: formData,
+      const { data } = await apiClient.post<{ items?: any[] }>('/image/upload', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: '이미지 업로드 실패' }));
-        throw new Error(errorData.error || `서버 오류: ${response.status}`);
-      }
-
-      const data = await response.json();
       return {
         success: true,
         items: data.items || [],
@@ -44,7 +26,7 @@ export class ImageService {
       console.error('이미지 업로드 오류:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        message: getErrorMessage(error) || '알 수 없는 오류',
       };
     }
   }
@@ -56,16 +38,7 @@ export class ImageService {
    */
   static async extractFromUrl(imageUrl: string): Promise<ImageUploadResponse> {
     try {
-      const response = await authenticatedFetch(`${IMAGE_API_URL}/extract`, {
-        method: 'POST',
-        body: JSON.stringify({ imageUrl }),
-      });
-
-      if (!response.ok) {
-        throw new Error('이미지 처리 실패');
-      }
-
-      const data = await response.json();
+      const { data } = await apiClient.post<{ items?: any[] }>('/image/extract', { imageUrl });
       return {
         success: true,
         items: data.items || [],
@@ -74,7 +47,7 @@ export class ImageService {
       console.error('이미지 추출 오류:', error);
       return {
         success: false,
-        message: error instanceof Error ? error.message : '알 수 없는 오류',
+        message: getErrorMessage(error) || '알 수 없는 오류',
       };
     }
   }

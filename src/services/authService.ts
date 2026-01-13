@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+import { apiClient, getErrorMessage } from '../utils/apiClient';
 
 export interface User {
   id: string;
@@ -36,78 +36,46 @@ class AuthService {
   private tokenKey = 'gyegaboo_auth_token';
 
   async login(username: string, password: string): Promise<LoginResponse> {
-    const response = await fetch(`${API_URL}/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '로그인에 실패했습니다.');
+    try {
+      const { data } = await apiClient.post<LoginResponse>('/auth/login', { username, password });
+      this.setToken(data.token);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '로그인에 실패했습니다.');
     }
-
-    const data = await response.json();
-    this.setToken(data.token);
-    return data;
   }
 
   async registerAdmin(username: string, password: string): Promise<RegisterAdminResponse> {
-    const token = this.getToken();
-    if (!token) {
+    if (!this.getToken()) {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await fetch(`${API_URL}/auth/register-admin`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '관리자 등록에 실패했습니다.');
+    try {
+      const { data } = await apiClient.post<RegisterAdminResponse>('/auth/register-admin', { username, password });
+      this.setToken(data.token);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '관리자 등록에 실패했습니다.');
     }
-
-    const data = await response.json();
-    this.setToken(data.token);
-    return data;
   }
 
   async getCurrentUser(): Promise<User> {
-    const token = this.getToken();
-    if (!token) {
+    if (!this.getToken()) {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await fetch(`${API_URL}/auth/me`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error('인증에 실패했습니다.');
+    try {
+      const { data } = await apiClient.get<User>('/auth/me');
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '인증에 실패했습니다.');
     }
-
-    return response.json();
   }
 
   async logout(): Promise<void> {
-    const token = this.getToken();
-    if (token) {
+    if (this.getToken()) {
       try {
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        await apiClient.post('/auth/logout');
       } catch (error) {
         // 로그아웃 실패해도 토큰은 삭제
         console.error('Logout error:', error);
@@ -133,104 +101,68 @@ class AuthService {
   }
 
   async createInviteLink(): Promise<InviteResponse> {
-    const token = this.getToken();
-    if (!token) {
+    if (!this.getToken()) {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await fetch(`${API_URL}/auth/invite`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '초대 링크 생성에 실패했습니다.');
+    try {
+      const { data } = await apiClient.post<InviteResponse>('/auth/invite');
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '초대 링크 생성에 실패했습니다.');
     }
-
-    return response.json();
   }
 
   async verifyInviteToken(token: string): Promise<{ valid: boolean; message?: string }> {
-    const response = await fetch(`${API_URL}/auth/invite/${token}`, {
-      method: 'GET',
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      return { valid: false, message: error.error };
+    try {
+      const { data } = await apiClient.get<{ valid: boolean; message?: string }>(`/auth/invite/${token}`);
+      return data;
+    } catch (error) {
+      return { valid: false, message: getErrorMessage(error) };
     }
-
-    return response.json();
   }
 
   async registerWithInvite(token: string, username: string, password: string): Promise<RegisterResponse> {
-    const response = await fetch(`${API_URL}/auth/register`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ token, username, password }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '회원가입에 실패했습니다.');
+    try {
+      const { data } = await apiClient.post<RegisterResponse>('/auth/register', { token, username, password });
+      this.setToken(data.token);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '회원가입에 실패했습니다.');
     }
-
-    const data = await response.json();
-    this.setToken(data.token);
-    return data;
   }
 
   async updateProfile(nickname?: string): Promise<User> {
-    const token = this.getToken();
-    if (!token) {
+    if (!this.getToken()) {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await fetch(`${API_URL}/auth/profile`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ nickname }),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '프로필 업데이트에 실패했습니다.');
+    try {
+      const { data } = await apiClient.put<User>('/auth/profile', { nickname });
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '프로필 업데이트에 실패했습니다.');
     }
-
-    return response.json();
   }
 
   async uploadProfileImage(file: File): Promise<User> {
-    const token = this.getToken();
-    if (!token) {
+    if (!this.getToken()) {
       throw new Error('로그인이 필요합니다.');
     }
 
     const formData = new FormData();
     formData.append('image', file);
 
-    const response = await fetch(`${API_URL}/auth/profile/image`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || '프로필 이미지 업로드에 실패했습니다.');
+    try {
+      const { data } = await apiClient.post<User>('/auth/profile/image', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error) || '프로필 이미지 업로드에 실패했습니다.');
     }
-
-    return response.json();
   }
 }
 
