@@ -24,22 +24,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: npm run semantic-release || true
 
-
   deploy:
     runs-on: self-hosted
     needs: release
 
     steps:
       - uses: actions/checkout@v4
-
-      # 🔹 nvm 로드
-      - name: Load nvm
-        run: |
-          export NVM_DIR="$HOME/.nvm"
-          source "$NVM_DIR/nvm.sh"
-          node -v
-          npm -v
-          pm2 -v
 
       # 🔹 Build
       - name: Build
@@ -50,18 +40,16 @@ jobs:
           npm ci
           npm run build
 
-      # 🔹 Frontend (pm2)
-      - name: Deploy Frontend
+      # 🔹 서버 실행 디렉토리로 이동 (덮어쓰기)
+      - name: Sync App Code
         run: |
-          export NVM_DIR="$HOME/.nvm"
-          source "$NVM_DIR/nvm.sh"
+          APP_ROOT=/home/ec2-user/apps/gyegaboo
+          APP_DIR=$APP_ROOT/app
 
-          export PORT=${FRONTEND_PORT:-5173}
-
-          pm2 restart gyegaboo-frontend \
-            || pm2 start npm \
-              --name gyegaboo-frontend \
-              -- run preview
+          mkdir -p "$APP_DIR"
+          rsync -a --delete \
+            --exclude shared \
+            ./ "$APP_DIR/"
 
       # 🔹 Backend (pm2)
       - name: Deploy Backend
@@ -69,7 +57,12 @@ jobs:
           export NVM_DIR="$HOME/.nvm"
           source "$NVM_DIR/nvm.sh"
 
-          export PORT=${BACKEND_PORT:-3001}
+          APP_ROOT=/home/ec2-user/apps/gyegaboo
+          cd "$APP_ROOT/app"
+
+          export PORT=3001
+          export DB_PATH="$APP_ROOT/shared/data/db.sqlite"
+          export UPLOAD_DIR="$APP_ROOT/shared/uploads"
           export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 
           pm2 restart gyegaboo-backend \
