@@ -45,11 +45,19 @@ jobs:
             node -v
         # 5️⃣ 프론트엔드 빌드
         - name: Build Frontend
-          run: npm run build
+          run: |
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            node -v
+            npm run build
 
         # 6️⃣ 프론트엔드 서버 실행
         - name: Start Frontend Server
           run: |
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            node -v
+
             PID_FILE="$(pwd)/.pids/gyegaboo-frontend.pid"
             LOG_FILE="$(pwd)/logs/gyegaboo-frontend.log"
             
@@ -89,6 +97,10 @@ jobs:
         # 7️⃣ 백엔드 서버 실행
         - name: Start Backend Server
           run: |
+            export NVM_DIR="$HOME/.nvm"
+            source "$NVM_DIR/nvm.sh"
+            node -v
+            
             PID_FILE="$(pwd)/.pids/gyegaboo-backend.pid"
             LOG_FILE="$(pwd)/logs/gyegaboo-backend.log"
             
