@@ -89,10 +89,29 @@ export function initDatabase() {
       id TEXT PRIMARY KEY,
       username TEXT UNIQUE NOT NULL,
       password_hash TEXT NOT NULL,
+      nickname TEXT,
+      profile_image_url TEXT,
       is_initial_admin INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  // 기존 테이블에 nickname과 profile_image_url 컬럼 추가 (마이그레이션)
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN nickname TEXT`);
+  } catch (error: any) {
+    if (!error.message.includes('duplicate column name')) {
+      console.warn('Failed to add nickname column:', error.message);
+    }
+  }
+  
+  try {
+    db.exec(`ALTER TABLE users ADD COLUMN profile_image_url TEXT`);
+  } catch (error: any) {
+    if (!error.message.includes('duplicate column name')) {
+      console.warn('Failed to add profile_image_url column:', error.message);
+    }
+  }
 
   // invitation_tokens 테이블 생성
   db.exec(`
@@ -162,7 +181,7 @@ export const expenseQueries = {
     return db.prepare(`
       SELECT 
         e.*,
-        u.username as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername
       FROM expenses e
       LEFT JOIN users u ON e.created_by = u.id
       ORDER BY e.date DESC
@@ -173,7 +192,7 @@ export const expenseQueries = {
     return db.prepare(`
       SELECT 
         e.*,
-        u.username as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername
       FROM expenses e
       LEFT JOIN users u ON e.created_by = u.id
       WHERE e.id = ?
@@ -290,7 +309,7 @@ export const recurringExpenseQueries = {
     return db.prepare(`
       SELECT 
         r.*,
-        u.username as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername
       FROM recurring_expenses r
       LEFT JOIN users u ON r.created_by = u.id
       ORDER BY r.start_date DESC
@@ -316,7 +335,7 @@ export const recurringExpenseQueries = {
     return db.prepare(`
       SELECT 
         r.*,
-        u.username as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername
       FROM recurring_expenses r
       LEFT JOIN users u ON r.created_by = u.id
       WHERE r.id = ?
@@ -327,7 +346,7 @@ export const recurringExpenseQueries = {
     return db.prepare(`
       SELECT 
         r.*,
-        u.username as createdByUsername
+        COALESCE(u.nickname, u.username) as createdByUsername
       FROM recurring_expenses r
       LEFT JOIN users u ON r.created_by = u.id
       WHERE r.is_active = 1
@@ -450,6 +469,8 @@ export const userQueries = {
       id: string;
       username: string;
       password_hash: string;
+      nickname: string | null;
+      profile_image_url: string | null;
       is_initial_admin: number;
       created_at: string;
     } | undefined;
@@ -460,6 +481,8 @@ export const userQueries = {
       id: string;
       username: string;
       password_hash: string;
+      nickname: string | null;
+      profile_image_url: string | null;
       is_initial_admin: number;
       created_at: string;
     } | undefined;
@@ -475,12 +498,37 @@ export const userQueries = {
   },
 
   getAll: () => {
-    return db.prepare('SELECT id, username, is_initial_admin, created_at FROM users ORDER BY created_at DESC').all() as Array<{
+    return db.prepare('SELECT id, username, nickname, profile_image_url, is_initial_admin, created_at FROM users ORDER BY created_at DESC').all() as Array<{
       id: string;
       username: string;
+      nickname: string | null;
+      profile_image_url: string | null;
       is_initial_admin: number;
       created_at: string;
     }>;
+  },
+
+  update: (id: string, updates: {
+    nickname?: string;
+    profile_image_url?: string;
+  }) => {
+    const fields: string[] = [];
+    const values: any[] = [];
+
+    if (updates.nickname !== undefined) {
+      fields.push('nickname = ?');
+      values.push(updates.nickname || null);
+    }
+    if (updates.profile_image_url !== undefined) {
+      fields.push('profile_image_url = ?');
+      values.push(updates.profile_image_url || null);
+    }
+
+    if (fields.length === 0) return userQueries.getById(id);
+
+    values.push(id);
+    db.prepare(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`).run(...values);
+    return userQueries.getById(id);
   },
 
   deleteInitialAdmin: () => {

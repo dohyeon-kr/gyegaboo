@@ -6,6 +6,7 @@ import { ExpenseList } from './components/ExpenseList';
 import { ManualEntry } from './components/ManualEntry';
 import { RecurringExpenses } from './components/RecurringExpenses';
 import { InviteMember } from './components/InviteMember';
+import { Profile } from './components/Profile';
 import { ThemeToggle } from './components/ThemeToggle';
 import { Login } from './components/Login';
 import { Register } from './components/Register';
@@ -14,7 +15,7 @@ import { useAuthStore } from './stores/authStore';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './components/ui/tabs';
 import { Card } from './components/ui/card';
 
-type Tab = 'list' | 'statistics' | 'ai' | 'image' | 'manual' | 'recurring' | 'invite';
+type Tab = 'list' | 'statistics' | 'ai' | 'image' | 'manual' | 'recurring' | 'invite' | 'profile';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('list');
@@ -56,7 +57,7 @@ function App() {
               <ThemeToggle />
             </div>
             <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as Tab)}>
-              <TabsList className="grid w-full grid-cols-7">
+              <TabsList className="grid w-full grid-cols-8">
                 <TabsTrigger value="list">목록</TabsTrigger>
                 <TabsTrigger value="statistics">통계</TabsTrigger>
                 <TabsTrigger value="ai">AI 대화</TabsTrigger>
@@ -64,6 +65,7 @@ function App() {
                 <TabsTrigger value="manual">수동 입력</TabsTrigger>
                 <TabsTrigger value="recurring">고정비</TabsTrigger>
                 <TabsTrigger value="invite">초대</TabsTrigger>
+                <TabsTrigger value="profile">프로필</TabsTrigger>
               </TabsList>
             </Tabs>
           </div>
@@ -92,6 +94,9 @@ function App() {
               </TabsContent>
               <TabsContent value="invite" className="mt-0">
                 <InviteMember />
+              </TabsContent>
+              <TabsContent value="profile" className="mt-0">
+                <Profile />
               </TabsContent>
             </Tabs>
           </div>

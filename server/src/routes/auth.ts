@@ -35,6 +35,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       user: {
         id: user.id,
         username: user.username,
+        nickname: user.nickname || user.username,
+        profileImageUrl: user.profile_image_url,
         isInitialAdmin: user.is_initial_admin === 1,
       },
     };
@@ -54,6 +56,8 @@ export async function authRoutes(fastify: FastifyInstance) {
     return {
       id: dbUser.id,
       username: dbUser.username,
+      nickname: dbUser.nickname || dbUser.username,
+      profileImageUrl: dbUser.profile_image_url,
       isInitialAdmin: dbUser.is_initial_admin === 1,
     };
   });
@@ -106,6 +110,8 @@ export async function authRoutes(fastify: FastifyInstance) {
       user: {
         id: newUser.id,
         username: newUser.username,
+        nickname: newUser.nickname || newUser.username,
+        profileImageUrl: newUser.profile_image_url,
         isInitialAdmin: false,
       },
       message: '새로운 관리자가 등록되었고, 초기 관리자 계정이 삭제되었습니다.',
@@ -216,9 +222,71 @@ export async function authRoutes(fastify: FastifyInstance) {
       user: {
         id: newUser.id,
         username: newUser.username,
+        nickname: newUser.nickname || newUser.username,
+        profileImageUrl: newUser.profile_image_url,
         isInitialAdmin: false,
       },
       message: '회원가입이 완료되었습니다.',
+    };
+  });
+
+  // 프로필 업데이트
+  fastify.put('/profile', {
+    preHandler: [fastify.authenticate],
+  }, async (request: FastifyRequest<{
+    Body: { nickname?: string };
+  }>, reply: FastifyReply) => {
+    const currentUser = request.user as { id: string; username: string; isInitialAdmin: boolean };
+    const { nickname } = request.body;
+
+    if (nickname !== undefined && nickname.trim().length === 0) {
+      return reply.code(400).send({ error: '닉네임은 비어있을 수 없습니다.' });
+    }
+
+    const updated = userQueries.update(currentUser.id, { nickname: nickname?.trim() || null });
+    
+    if (!updated) {
+      return reply.code(404).send({ error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    return {
+      id: updated.id,
+      username: updated.username,
+      nickname: updated.nickname || updated.username,
+      profileImageUrl: updated.profile_image_url,
+      isInitialAdmin: updated.is_initial_admin === 1,
+    };
+  });
+
+  // 프로필 이미지 업로드
+  fastify.post('/profile/image', {
+    preHandler: [fastify.authenticate],
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
+    const currentUser = request.user as { id: string; username: string; isInitialAdmin: boolean };
+    const data = await request.file();
+    
+    if (!data) {
+      return reply.code(400).send({ error: '이미지 파일을 업로드해주세요.' });
+    }
+
+    // 이미지를 base64로 인코딩하여 저장 (실제 프로덕션에서는 S3 등에 저장)
+    const buffer = await data.toBuffer();
+    const base64Image = buffer.toString('base64');
+    const mimeType = data.mimetype || 'image/jpeg';
+    const imageUrl = `data:${mimeType};base64,${base64Image}`;
+
+    const updated = userQueries.update(currentUser.id, { profile_image_url: imageUrl });
+    
+    if (!updated) {
+      return reply.code(404).send({ error: '사용자를 찾을 수 없습니다.' });
+    }
+
+    return {
+      id: updated.id,
+      username: updated.username,
+      nickname: updated.nickname || updated.username,
+      profileImageUrl: updated.profile_image_url,
+      isInitialAdmin: updated.is_initial_admin === 1,
     };
   });
 }

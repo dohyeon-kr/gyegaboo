@@ -3,6 +3,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 export interface User {
   id: string;
   username: string;
+  nickname?: string;
+  profileImageUrl?: string;
   isInitialAdmin: boolean;
 }
 
@@ -182,6 +184,54 @@ class AuthService {
     const data = await response.json();
     this.setToken(data.token);
     return data;
+  }
+
+  async updateProfile(nickname?: string): Promise<User> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${API_URL}/auth/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ nickname }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '프로필 업데이트에 실패했습니다.');
+    }
+
+    return response.json();
+  }
+
+  async uploadProfileImage(file: File): Promise<User> {
+    const token = this.getToken();
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    const response = await fetch(`${API_URL}/auth/profile/image`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || '프로필 이미지 업로드에 실패했습니다.');
+    }
+
+    return response.json();
   }
 }
 

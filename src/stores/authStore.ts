@@ -10,6 +10,8 @@ interface AuthStore {
   registerWithInvite: (token: string, username: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateProfile: (nickname?: string) => Promise<void>;
+  uploadProfileImage: (file: File) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthStore>((set) => ({
@@ -89,5 +91,15 @@ export const useAuthStore = create<AuthStore>((set) => ({
         isLoading: false,
       });
     }
+  },
+
+  updateProfile: async (nickname?: string) => {
+    const user = await authService.updateProfile(nickname);
+    set({ user });
+  },
+
+  uploadProfileImage: async (file: File) => {
+    const user = await authService.uploadProfileImage(file);
+    set({ user });
   },
 }));
