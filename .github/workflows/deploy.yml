@@ -84,6 +84,12 @@ jobs:
 
           export DATABASE_URL="file:$APP_ROOT/shared/data/gyegaboo.db"
 
+          # Prisma 바이너리 파일 확인
+          if [ ! -f "$APP_ROOT/node_modules/.bin/prisma_schema_build_bg.wasm" ]; then
+            echo "Prisma binary missing, reinstalling prisma..."
+            npm install prisma @prisma/client --no-save --prefer-offline || npm ci --prefer-offline --no-audit
+          fi
+
           # Prisma 클라이언트 생성
           npx prisma generate
 
