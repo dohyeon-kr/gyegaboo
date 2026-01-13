@@ -138,16 +138,16 @@ export function ExpenseList() {
 
             {/* 필터 및 정렬 */}
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-              <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
+            <Select value={filter} onValueChange={(value) => setFilter(value as any)}>
                 <SelectTrigger className="w-full sm:w-[140px]">
                   <SelectValue placeholder="유형" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">전체</SelectItem>
-                  <SelectItem value="income">수입</SelectItem>
-                  <SelectItem value="expense">지출</SelectItem>
-                </SelectContent>
-              </Select>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체</SelectItem>
+                <SelectItem value="income">수입</SelectItem>
+                <SelectItem value="expense">지출</SelectItem>
+              </SelectContent>
+            </Select>
               
               <Select value={authorFilter} onValueChange={setAuthorFilter}>
                 <SelectTrigger className="w-full sm:w-[140px]">
@@ -163,15 +163,15 @@ export function ExpenseList() {
                 </SelectContent>
               </Select>
 
-              <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as any)}>
                 <SelectTrigger className="w-full sm:w-[140px]">
-                  <SelectValue placeholder="정렬" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="date">날짜순</SelectItem>
-                  <SelectItem value="amount">금액순</SelectItem>
-                </SelectContent>
-              </Select>
+                <SelectValue placeholder="정렬" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="date">날짜순</SelectItem>
+                <SelectItem value="amount">금액순</SelectItem>
+              </SelectContent>
+            </Select>
             </div>
 
             {/* 필터 상태 표시 */}
@@ -298,16 +298,16 @@ export function ExpenseList() {
                           >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button
+                        <Button
                             type="button"
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteClick(item)}
-                            className="text-destructive hover:text-destructive"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDeleteClick(item)}
+                          className="text-destructive hover:text-destructive"
                             title="삭제"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                         </div>
                       </div>
                     </div>

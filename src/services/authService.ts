@@ -141,7 +141,6 @@ class AuthService {
     const response = await fetch(`${API_URL}/auth/invite`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
     });

@@ -12,18 +12,18 @@ export async function imageRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     try {
-      const data = await request.file();
+    const data = await request.file();
       const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
-      
-      if (!data) {
-        return reply.code(400).send({ error: 'No file uploaded' });
-      }
+    
+    if (!data) {
+      return reply.code(400).send({ error: 'No file uploaded' });
+    }
 
-      const buffer = await data.toBuffer();
+    const buffer = await data.toBuffer();
       const mimeType = data.mimetype || 'image/jpeg';
       
       // OCR로 데이터 추출
-      const items = await extractExpensesFromImage(buffer, data.filename);
+    const items = await extractExpensesFromImage(buffer, data.filename);
       
       if (items.length === 0) {
         return reply.code(400).send({ 
@@ -48,10 +48,10 @@ export async function imageRoutes(fastify: FastifyInstance) {
       // 작성자 정보를 포함하여 저장
       const created = expenseQueries.createMany(items, user.id);
 
-      return {
-        success: true,
+    return {
+      success: true,
         items: created,
-      };
+    };
     } catch (error: any) {
       fastify.log.error('이미지 업로드 오류:', error);
       return reply.code(500).send({ 
@@ -66,14 +66,14 @@ export async function imageRoutes(fastify: FastifyInstance) {
     preHandler: [fastify.authenticate],
   }, async (request, reply) => {
     try {
-      const { imageUrl } = request.body as { imageUrl: string };
+    const { imageUrl } = request.body as { imageUrl: string };
       const user = request.user as { id: string; username: string; isInitialAdmin: boolean };
-      
-      if (!imageUrl) {
-        return reply.code(400).send({ error: 'imageUrl is required' });
-      }
+    
+    if (!imageUrl) {
+      return reply.code(400).send({ error: 'imageUrl is required' });
+    }
 
-      const items = await extractExpensesFromImageUrl(imageUrl);
+    const items = await extractExpensesFromImageUrl(imageUrl);
       
       if (items.length === 0) {
         return reply.code(400).send({ 
@@ -85,10 +85,10 @@ export async function imageRoutes(fastify: FastifyInstance) {
       // 작성자 정보를 포함하여 저장
       const created = expenseQueries.createMany(items, user.id);
 
-      return {
-        success: true,
+    return {
+      success: true,
         items: created,
-      };
+    };
     } catch (error: any) {
       fastify.log.error('이미지 URL 추출 오류:', error);
       return reply.code(500).send({ 

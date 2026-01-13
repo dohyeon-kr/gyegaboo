@@ -45,17 +45,17 @@ export function ImageUpload() {
       
       if (response.success && response.items && response.items.length > 0) {
         try {
-          await addItems(response.items);
-          toast({
-            title: "추가 완료",
-            description: `${response.items.length}개의 항목이 추가되었습니다.`,
-          });
-          // 초기화
+        await addItems(response.items);
+        toast({
+          title: "추가 완료",
+          description: `${response.items.length}개의 항목이 추가되었습니다.`,
+        });
+        // 초기화
           setSelectedFile(null);
           setPreview(null);
-          if (fileInputRef.current) {
-            fileInputRef.current.value = '';
-          }
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         } catch (addError) {
           console.error('Error adding items:', addError);
           toast({
