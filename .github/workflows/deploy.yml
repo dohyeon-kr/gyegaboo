@@ -34,86 +34,89 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npm run semantic-release || echo "NO_RELEASE=true" >> $GITHUB_ENV
-
-      # 5️⃣ 프론트엔드 빌드
-      - name: Build Frontend
-        run: npm run build
-
-      # 6️⃣ 프론트엔드 서버 실행
-      - name: Start Frontend Server
-        run: |
-          PID_FILE="$(pwd)/.pids/gyegaboo-frontend.pid"
-          LOG_FILE="$(pwd)/logs/gyegaboo-frontend.log"
           
-          # PID 파일과 로그 파일 디렉토리 생성
-          mkdir -p "$(dirname "$PID_FILE")"
-          mkdir -p "$(dirname "$LOG_FILE")"
-          
-          # 기존 프론트엔드 프로세스 종료 (PID 파일이 있는 경우)
-          if [ -f "$PID_FILE" ]; then
-            OLD_PID=$(cat "$PID_FILE")
-            if ps -p "$OLD_PID" > /dev/null 2>&1; then
-              # 프로세스가 실제로 node/vite인지 확인 (다른 프로세스 종료 방지)
-              PROC_NAME=$(ps -p "$OLD_PID" -o comm= 2>/dev/null || echo "")
-              if echo "$PROC_NAME" | grep -qE "node|vite"; then
-                echo "기존 프론트엔드 프로세스 ($OLD_PID) 종료 중..."
-                kill "$OLD_PID" 2>/dev/null || true
-                sleep 2
-                # 여전히 실행 중이면 강제 종료
-                if ps -p "$OLD_PID" > /dev/null 2>&1; then
-                  kill -9 "$OLD_PID" 2>/dev/null || true
+  deploy:
+      runs-on: self-hosted
+      steps:
+        # 5️⃣ 프론트엔드 빌드
+        - name: Build Frontend
+          run: npm run build
+
+        # 6️⃣ 프론트엔드 서버 실행
+        - name: Start Frontend Server
+          run: |
+            PID_FILE="$(pwd)/.pids/gyegaboo-frontend.pid"
+            LOG_FILE="$(pwd)/logs/gyegaboo-frontend.log"
+            
+            # PID 파일과 로그 파일 디렉토리 생성
+            mkdir -p "$(dirname "$PID_FILE")"
+            mkdir -p "$(dirname "$LOG_FILE")"
+            
+            # 기존 프론트엔드 프로세스 종료 (PID 파일이 있는 경우)
+            if [ -f "$PID_FILE" ]; then
+              OLD_PID=$(cat "$PID_FILE")
+              if ps -p "$OLD_PID" > /dev/null 2>&1; then
+                # 프로세스가 실제로 node/vite인지 확인 (다른 프로세스 종료 방지)
+                PROC_NAME=$(ps -p "$OLD_PID" -o comm= 2>/dev/null || echo "")
+                if echo "$PROC_NAME" | grep -qE "node|vite"; then
+                  echo "기존 프론트엔드 프로세스 ($OLD_PID) 종료 중..."
+                  kill "$OLD_PID" 2>/dev/null || true
+                  sleep 2
+                  # 여전히 실행 중이면 강제 종료
+                  if ps -p "$OLD_PID" > /dev/null 2>&1; then
+                    kill -9 "$OLD_PID" 2>/dev/null || true
+                  fi
+                  echo "기존 프론트엔드 프로세스 ($OLD_PID) 종료됨"
+                else
+                  echo "경고: PID $OLD_PID는 gyegaboo-frontend 프로세스가 아닙니다. 건너뜁니다."
                 fi
-                echo "기존 프론트엔드 프로세스 ($OLD_PID) 종료됨"
-              else
-                echo "경고: PID $OLD_PID는 gyegaboo-frontend 프로세스가 아닙니다. 건너뜁니다."
               fi
+              rm -f "$PID_FILE"
             fi
-            rm -f "$PID_FILE"
-          fi
-          
-          # 프론트엔드 서버 실행 (백그라운드)
-          export PORT=${FRONTEND_PORT:-5173}
-          nohup npm run preview > "$LOG_FILE" 2>&1 &
-          NEW_PID=$!
-          echo "$NEW_PID" > "$PID_FILE"
-          echo "프론트엔드 서버 시작됨 (PID: $NEW_PID)"
+            
+            # 프론트엔드 서버 실행 (백그라운드)
+            export PORT=${FRONTEND_PORT:-5173}
+            nohup npm run preview > "$LOG_FILE" 2>&1 &
+            NEW_PID=$!
+            echo "$NEW_PID" > "$PID_FILE"
+            echo "프론트엔드 서버 시작됨 (PID: $NEW_PID)"
 
-      # 7️⃣ 백엔드 서버 실행
-      - name: Start Backend Server
-        run: |
-          PID_FILE="$(pwd)/.pids/gyegaboo-backend.pid"
-          LOG_FILE="$(pwd)/logs/gyegaboo-backend.log"
-          
-          # PID 파일과 로그 파일 디렉토리 생성
-          mkdir -p "$(dirname "$PID_FILE")"
-          mkdir -p "$(dirname "$LOG_FILE")"
-          
-          # 기존 백엔드 프로세스 종료 (PID 파일이 있는 경우)
-          if [ -f "$PID_FILE" ]; then
-            OLD_PID=$(cat "$PID_FILE")
-            if ps -p "$OLD_PID" > /dev/null 2>&1; then
-              # 프로세스가 실제로 node/tsx인지 확인 (다른 프로세스 종료 방지)
-              PROC_NAME=$(ps -p "$OLD_PID" -o comm= 2>/dev/null || echo "")
-              if echo "$PROC_NAME" | grep -qE "node|tsx"; then
-                echo "기존 백엔드 프로세스 ($OLD_PID) 종료 중..."
-                kill "$OLD_PID" 2>/dev/null || true
-                sleep 2
-                # 여전히 실행 중이면 강제 종료
-                if ps -p "$OLD_PID" > /dev/null 2>&1; then
-                  kill -9 "$OLD_PID" 2>/dev/null || true
+        # 7️⃣ 백엔드 서버 실행
+        - name: Start Backend Server
+          run: |
+            PID_FILE="$(pwd)/.pids/gyegaboo-backend.pid"
+            LOG_FILE="$(pwd)/logs/gyegaboo-backend.log"
+            
+            # PID 파일과 로그 파일 디렉토리 생성
+            mkdir -p "$(dirname "$PID_FILE")"
+            mkdir -p "$(dirname "$LOG_FILE")"
+            
+            # 기존 백엔드 프로세스 종료 (PID 파일이 있는 경우)
+            if [ -f "$PID_FILE" ]; then
+              OLD_PID=$(cat "$PID_FILE")
+              if ps -p "$OLD_PID" > /dev/null 2>&1; then
+                # 프로세스가 실제로 node/tsx인지 확인 (다른 프로세스 종료 방지)
+                PROC_NAME=$(ps -p "$OLD_PID" -o comm= 2>/dev/null || echo "")
+                if echo "$PROC_NAME" | grep -qE "node|tsx"; then
+                  echo "기존 백엔드 프로세스 ($OLD_PID) 종료 중..."
+                  kill "$OLD_PID" 2>/dev/null || true
+                  sleep 2
+                  # 여전히 실행 중이면 강제 종료
+                  if ps -p "$OLD_PID" > /dev/null 2>&1; then
+                    kill -9 "$OLD_PID" 2>/dev/null || true
+                  fi
+                  echo "기존 백엔드 프로세스 ($OLD_PID) 종료됨"
+                else
+                  echo "경고: PID $OLD_PID는 gyegaboo-backend 프로세스가 아닙니다. 건너뜁니다."
                 fi
-                echo "기존 백엔드 프로세스 ($OLD_PID) 종료됨"
-              else
-                echo "경고: PID $OLD_PID는 gyegaboo-backend 프로세스가 아닙니다. 건너뜁니다."
               fi
+              rm -f "$PID_FILE"
             fi
-            rm -f "$PID_FILE"
-          fi
-          
-          # 백엔드 서버 실행 (백그라운드)
-          export PORT=${BACKEND_PORT:-3001}
-          export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-          nohup npm run server > "$LOG_FILE" 2>&1 &
-          NEW_PID=$!
-          echo "$NEW_PID" > "$PID_FILE"
-          echo "백엔드 서버 시작됨 (PID: $NEW_PID)"
+            
+            # 백엔드 서버 실행 (백그라운드)
+            export PORT=${BACKEND_PORT:-3001}
+            export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            nohup npm run server > "$LOG_FILE" 2>&1 &
+            NEW_PID=$!
+            echo "$NEW_PID" > "$PID_FILE"
+            echo "백엔드 서버 시작됨 (PID: $NEW_PID)"
