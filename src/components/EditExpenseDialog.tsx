@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import type { ExpenseItem, Category } from '../types'
+import type { ExpenseItem } from '../types'
 import { useExpenseStore } from '../stores/expenseStore'
 import {
   Dialog,
