@@ -9,6 +9,20 @@ BACKEND_PORT_BLUE=3002
 
 cd "$APP_ROOT"
 
+# Shared 디렉토리 및 데이터베이스 권한 확인 및 설정
+echo "Shared 디렉토리 권한 설정 중..."
+mkdir -p "$APP_ROOT/shared/data"
+mkdir -p "$APP_ROOT/shared/uploads/profiles"
+mkdir -p "$APP_ROOT/shared/uploads/receipts"
+
+# 디렉토리 권한 설정
+chmod -R 755 "$APP_ROOT/shared" 2>/dev/null || true
+
+# 데이터베이스 파일 권한 설정
+if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
+  chmod 664 "$APP_ROOT/shared/data/gyegaboo.db" 2>/dev/null || true
+fi
+
 # 현재 활성 인스턴스 확인
 CURRENT_FRONTEND=$(pm2 jlist 2>/dev/null | jq -r '.[] | select(.name == "gyegaboo-frontend-green" or .name == "gyegaboo-frontend-blue") | select(.pm2_env.status == "online") | .name' 2>/dev/null | head -1 || echo "")
 CURRENT_BACKEND=$(pm2 jlist 2>/dev/null | jq -r '.[] | select(.name == "gyegaboo-backend-green" or .name == "gyegaboo-backend-blue") | select(.pm2_env.status == "online") | .name' 2>/dev/null | head -1 || echo "")

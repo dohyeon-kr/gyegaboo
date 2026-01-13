@@ -1,6 +1,6 @@
 import Database from 'better-sqlite3';
 import { join, dirname } from 'path';
-import { mkdirSync, existsSync } from 'fs';
+import { mkdirSync, existsSync, chmodSync } from 'fs';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import type { ExpenseItem, Category } from '../../src/types/index.js';
@@ -10,10 +10,25 @@ const sharedDir = join(process.cwd(), 'shared');
 const dataDir = join(sharedDir, 'data');
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
+  // 디렉토리 권한 설정 (쓰기 가능)
+  try {
+    chmodSync(dataDir, 0o755);
+  } catch (error) {
+    // 권한 설정 실패 시 무시 (Windows 등에서는 필요 없음)
+  }
 }
 
 const dbPath = join(dataDir, 'gyegaboo.db');
 const db = new Database(dbPath);
+
+// 데이터베이스 파일 권한 확인 및 설정 (파일이 존재하는 경우)
+if (existsSync(dbPath)) {
+  try {
+    chmodSync(dbPath, 0o664);
+  } catch (error) {
+    // 권한 설정 실패 시 무시
+  }
+}
 
 // 데이터베이스 초기화
 export function initDatabase() {
