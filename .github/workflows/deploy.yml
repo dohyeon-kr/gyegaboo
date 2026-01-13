@@ -2,138 +2,77 @@ name: Release & Deploy Gyegaboo
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   release:
     runs-on: self-hosted
-
     steps:
-      # 1️⃣ 코드 체크아웃
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # semantic-release 필수
+          fetch-depth: 0
 
-      # 2️⃣ Node 설정
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
 
-      # 3️⃣ 의존성 설치
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
 
-      # 4️⃣ semantic-release 실행
       - name: Semantic Release
-        id: semrel
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          npm run semantic-release || echo "NO_RELEASE=true" >> $GITHUB_ENV
-          
+        run: npm run semantic-release || true
+
+
   deploy:
-      runs-on: self-hosted
-      steps:
-        - name: Setup Node
-          run: |
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            node -v
-        # 5️⃣ 프론트엔드 빌드
-        - name: Build Frontend
-          run: |
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            node -v
-            npm run build
+    runs-on: self-hosted
+    needs: release
 
-        # 6️⃣ 프론트엔드 서버 실행
-        - name: Start Frontend Server
-          run: |
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            node -v
+    steps:
+      - uses: actions/checkout@v4
 
-            PID_FILE="$(pwd)/.pids/gyegaboo-frontend.pid"
-            LOG_FILE="$(pwd)/logs/gyegaboo-frontend.log"
-            
-            # PID 파일과 로그 파일 디렉토리 생성
-            mkdir -p "$(dirname "$PID_FILE")"
-            mkdir -p "$(dirname "$LOG_FILE")"
-            
-            # 기존 프론트엔드 프로세스 종료 (PID 파일이 있는 경우)
-            if [ -f "$PID_FILE" ]; then
-              OLD_PID=$(cat "$PID_FILE")
-              if ps -p "$OLD_PID" > /dev/null 2>&1; then
-                # 프로세스가 실제로 node/vite인지 확인 (다른 프로세스 종료 방지)
-                PROC_NAME=$(ps -p "$OLD_PID" -o comm= 2>/dev/null || echo "")
-                if echo "$PROC_NAME" | grep -qE "node|vite"; then
-                  echo "기존 프론트엔드 프로세스 ($OLD_PID) 종료 중..."
-                  kill "$OLD_PID" 2>/dev/null || true
-                  sleep 2
-                  # 여전히 실행 중이면 강제 종료
-                  if ps -p "$OLD_PID" > /dev/null 2>&1; then
-                    kill -9 "$OLD_PID" 2>/dev/null || true
-                  fi
-                  echo "기존 프론트엔드 프로세스 ($OLD_PID) 종료됨"
-                else
-                  echo "경고: PID $OLD_PID는 gyegaboo-frontend 프로세스가 아닙니다. 건너뜁니다."
-                fi
-              fi
-              rm -f "$PID_FILE"
-            fi
-            
-            # 프론트엔드 서버 실행 (백그라운드)
-            export PORT=${FRONTEND_PORT:-5173}
-            nohup npm run preview > "$LOG_FILE" 2>&1 &
-            NEW_PID=$!
-            echo "$NEW_PID" > "$PID_FILE"
-            echo "프론트엔드 서버 시작됨 (PID: $NEW_PID)"
+      # 🔹 nvm 로드
+      - name: Load nvm
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+          node -v
+          npm -v
+          pm2 -v
 
-        # 7️⃣ 백엔드 서버 실행
-        - name: Start Backend Server
-          run: |
-            export NVM_DIR="$HOME/.nvm"
-            source "$NVM_DIR/nvm.sh"
-            node -v
-            
-            PID_FILE="$(pwd)/.pids/gyegaboo-backend.pid"
-            LOG_FILE="$(pwd)/logs/gyegaboo-backend.log"
-            
-            # PID 파일과 로그 파일 디렉토리 생성
-            mkdir -p "$(dirname "$PID_FILE")"
-            mkdir -p "$(dirname "$LOG_FILE")"
-            
-            # 기존 백엔드 프로세스 종료 (PID 파일이 있는 경우)
-            if [ -f "$PID_FILE" ]; then
-              OLD_PID=$(cat "$PID_FILE")
-              if ps -p "$OLD_PID" > /dev/null 2>&1; then
-                # 프로세스가 실제로 node/tsx인지 확인 (다른 프로세스 종료 방지)
-                PROC_NAME=$(ps -p "$OLD_PID" -o comm= 2>/dev/null || echo "")
-                if echo "$PROC_NAME" | grep -qE "node|tsx"; then
-                  echo "기존 백엔드 프로세스 ($OLD_PID) 종료 중..."
-                  kill "$OLD_PID" 2>/dev/null || true
-                  sleep 2
-                  # 여전히 실행 중이면 강제 종료
-                  if ps -p "$OLD_PID" > /dev/null 2>&1; then
-                    kill -9 "$OLD_PID" 2>/dev/null || true
-                  fi
-                  echo "기존 백엔드 프로세스 ($OLD_PID) 종료됨"
-                else
-                  echo "경고: PID $OLD_PID는 gyegaboo-backend 프로세스가 아닙니다. 건너뜁니다."
-                fi
-              fi
-              rm -f "$PID_FILE"
-            fi
-            
-            # 백엔드 서버 실행 (백그라운드)
-            export PORT=${BACKEND_PORT:-3001}
-            export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            nohup npm run server > "$LOG_FILE" 2>&1 &
-            NEW_PID=$!
-            echo "$NEW_PID" > "$PID_FILE"
-            echo "백엔드 서버 시작됨 (PID: $NEW_PID)"
+      # 🔹 Build
+      - name: Build
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
+          npm ci
+          npm run build
+
+      # 🔹 Frontend (pm2)
+      - name: Deploy Frontend
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
+          export PORT=${FRONTEND_PORT:-5173}
+
+          pm2 restart gyegaboo-frontend \
+            || pm2 start npm \
+              --name gyegaboo-frontend \
+              -- run preview
+
+      # 🔹 Backend (pm2)
+      - name: Deploy Backend
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          source "$NVM_DIR/nvm.sh"
+
+          export PORT=${BACKEND_PORT:-3001}
+          export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+
+          pm2 restart gyegaboo-backend \
+            || pm2 start npm \
+              --name gyegaboo-backend \
+              -- run server
