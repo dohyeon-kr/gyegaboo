@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { AIService } from '../services/aiService';
 import { useExpenseStore } from '../stores/expenseStore';
-import { RecurringExpenseService } from '../services/recurringExpenseService';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
