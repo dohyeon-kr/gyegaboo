@@ -96,7 +96,7 @@ jobs:
           # 기존 데이터베이스가 있으면 스키마 동기화
           if [ -f "$APP_ROOT/shared/data/gyegaboo.db" ]; then
             echo "Existing database found. Syncing schema..."
-            npx prisma db push --accept-data-loss || echo "Schema sync completed or no changes needed"
+            npx prisma migrate deploy || echo "Schema sync completed or no changes needed"
           else
             echo "No existing database. Schema will be created on first server run."
           fi
